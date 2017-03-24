@@ -73,6 +73,51 @@ class Cache1w():
         tag=ins[:(-self.index_size-self.offset_size)]
         return [tag,index,offset]
 
+    def run_instruction(instruction, data):
+        self.instruction=instruction
+        command=instruction[1]
+        [tag, index, offset]=self.split_instruction(instruction)
+        my_block=self.data[index]
+        if tag!=my_block.tag:
+            #miss, invalidate block
+            my_block.invalidate() #FIXME: missing implementation
+        if command=="{L}":
+            self.core_read(tag, index, offset)
+        else:
+            self.core_write(tag, index, offset, data)
+
+    def core_read(tag, index, offset):
+        my_block=self.data[index]
+        if my_block.state=="i":
+            #invalid
+            #FIXME: this will change to block methods!******
+            #my_block.info=self.fetch_from_memory(tag, index, offset)
+            #my_block.tag=tag
+            #my_block.state="e"
+        self.data_to_cache.send(my_block.info)
+
+    def core_write(tag, index, offset):
+        my_block=self.data[index]
+        
+        if my_block.state=="i":
+            self.busRdX(tag, index, offset)
+
+        #FIXME, this will be done by the block, not externally
+        #my_block.state="m"
+        #my_block.info=self.data_from_cache.recv() 
+
+
+    def fetch_from_memory(tag, index, offset):
+        self.cmd_to_mem.send(self.instruction)
+        return self.data_from_mem.recv()
+
+    def busRd(tag, index, offset):
+        pass #esto en realidad no se usa para el one way associative
+
+    #FIXME: missing busRdX and flush,
+    #flush opt no existe porque no hay paso entre caches
+    #busUpgr tampoco tiene efecto
+
 
     def execution_loop(self):
         while (True):
