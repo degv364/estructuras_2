@@ -74,7 +74,7 @@ class Cache1w():
         tag=ins[:(-self.index_size-self.offset_size)]
         return [tag,index,offset]
 
-    def run_instruction(instruction, data):
+    def run_instruction(self, instruction, data):
         self.instruction=instruction
         command=instruction[1]
         [tag, index, offset]=self.split_instruction(instruction)
@@ -87,7 +87,7 @@ class Cache1w():
         else:
             self.core_write(tag, index, offset, data)
 
-    def core_read(tag, index, offset):
+    def core_read(self, tag, index, offset):
         my_block=self.data[index]
         if my_block.state=="i":
             #invalid
@@ -97,7 +97,7 @@ class Cache1w():
             #my_block.state="e"
         self.data_to_cache.send(my_block.info)
 
-    def core_write(tag, index, offset):
+    def core_write(self, tag, index, offset):
         my_block=self.data[index]
         
         if my_block.state=="i":
@@ -108,20 +108,20 @@ class Cache1w():
         #my_block.info=self.data_from_cache.recv() 
 
 
-    def fetch_from_memory(tag, index, offset):
+    def fetch_from_memory(self, tag, index, offset):
         self.cmd_to_mem.send(self.instruction)
         return self.data_from_mem.recv()
 
-    def busRd(tag, index, offset):
+    def busRd(self, tag, index, offset):
         pass #esto en realidad no se usa para el one way associative
 
-    def busRdX(tag, index, offset):
+    def busRdX(self, tag, index, offset):
         my_block=self.data[index]
         if my_block.state=="m" or my_block.state=="e":
             #self.flush(tag, index, offset)
             #my_block.state="i"
         
-    def flush(tag, index, offset):
+    def flush(self, tag, index, offset):
         #generate a write instruction for memory
         ins=[tag+index+offset, "{S}"]
         my_block=self.data[index]
@@ -153,8 +153,5 @@ def cacheL2(param_dicc):
     
 
 
-def cacheL1(param_dicc):
-    #FIXME: missing implementation
-    pass
     
 

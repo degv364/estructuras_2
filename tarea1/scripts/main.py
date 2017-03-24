@@ -66,12 +66,14 @@ def main():
                       "data_to_cache":  data_core2_to_cache2} 
 
     cacheL1_parameters={"cmd_from_core1":cmd_cache1_from_core1,
-                          "cmd_from_core2": cmd_cache2_from_core2,
-                          "data_from_core1": data_cache1_from_core1,
-                          "data_from_core2": data_cache2_from_core2,
-                          "cmd_to_cache": cmd_L1_to_L2,
-                          "data_to_cache": data_L1_to_L2,
-                          "data_from_cache":data_L1_from_L2}
+                        "cmd_from_core2": cmd_cache2_from_core2,
+                        "data_from_core1": data_cache1_from_core1,
+                        "data_from_core2": data_cache2_from_core2,
+                        "data_to_core1": data_cache1_to_core1,
+                        "data_to_core2": data_cache2_to_core2,
+                        "cmd_to_cache": cmd_L1_to_L2,
+                        "data_to_cache": data_L1_to_L2,
+                        "data_from_cache":data_L1_from_L2}
 
     cacheL2_parameters={"cmd_from_cache": cmd_L2_from_L1,
                         "data_from_cache": data_L2_from_L1,
