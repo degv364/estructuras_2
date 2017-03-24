@@ -14,47 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-
-from math import log
 from random import randint
+from utils import log2, log16, int2hex, int2bin, hex2bin, hex2bin, bin2hex
 
-def log2(num):
-    return log(num, 2)
 
-def log16(num):
-    return log(num, 16)
-
-def int2hex(integer, size):
-    #returns a string that represents the integer, but with as meny 0 to the left to fit size
-    basic=hex(integer)
-    basic=basic.split('x')[1]
-    if len(basic)>size:
-        basic="x"*size
-    else:
-        while len(basic)<size:
-            basic="0"+basic
-
-    return basic
-
-def int2bin(integer, size):
-    #returns a string that represents the integer, but with as meny 0 to the left to fit size
-    basic=hex(integer)
-    basic=basic.split('b')[1]
-    if len(basic)>size:
-        basic="x"*size
-    else:
-        while len(basic)<size:
-            basic="0"+basic
-
-    return basic
-
-def hex2bin(integer):
-    length=len(integer) #how many chars in the number
-    return int2bin(int(integer), 4*length) #evety hex symbols needs 4 bits
-
-def bin2hex(integer):
-    length=len(integer)
-    return int2hex(int(integer), length/4)
 
 
  class Block1w():
