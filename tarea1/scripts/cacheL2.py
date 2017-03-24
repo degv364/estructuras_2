@@ -15,7 +15,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
 from random import randint
-from utils import log2, log16, int2hex, int2bin, hex2bin, hex2bin, bin2hex
+from utils import *
+from block import Block #FIXME: maybe another file
 
 
 
@@ -114,9 +115,19 @@ class Cache1w():
     def busRd(tag, index, offset):
         pass #esto en realidad no se usa para el one way associative
 
-    #FIXME: missing busRdX and flush,
-    #flush opt no existe porque no hay paso entre caches
-    #busUpgr tampoco tiene efecto
+    def busRdX(tag, index, offset):
+        my_block=self.data[index]
+        if my_block.state=="m" or my_block.state=="e":
+            #self.flush(tag, index, offset)
+            #my_block.state="i"
+        
+    def flush(tag, index, offset):
+        #generate a write instruction for memory
+        ins=[tag+index+offset, "{S}"]
+        my_block=self.data[index]
+        data=my_block.info
+        self.data_to_mem.send(data)
+        self.cmd_to_mem.send(ins)
 
 
     def execution_loop(self):
