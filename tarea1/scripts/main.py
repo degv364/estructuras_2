@@ -19,8 +19,10 @@
 from multiprocessing import Pipe, Process
 from parser import get_adresses
 from core import core
-from cache import cacheL1, cacheL2
+from cacheL1 import cacheL1
+from cacheL2 import cacheL2
 from mem import mem
+from utils import *
 
 
 def main():
