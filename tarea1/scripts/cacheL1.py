@@ -61,6 +61,10 @@ class Cache2w():
         self.cmd_from_core=param_dicc["cmd_from_core"]
         self.data_from_core=param_dicc["data_from_core"]
         self.data_to_core=param_dicc["data_to_core"]
+
+        self.cmd_to_cache=param_dicc["cmd_to_cache"]
+        self.data_from_cache=param_dicc["data_from_cache"]
+        self.data_to_cache=param_dicc["data_to_cache"]
         
         index_cant=data_size/block_size; #for one way
         index_cant=index_cant/2#for 2 way associative
@@ -71,8 +75,8 @@ class Cache2w():
         for index in xrange(index_cant):
             self.data[int2bin(index, self.index_size)]=Block_pair(Block(), Block())
 
-    def set_bus(self, bus):
-        self.bus=bus
+    def set_cache(self, cache):
+        self.other=cache
 
     def split_instruction(self):
         #instruction is a list, fisrt element is adress, return a list with tag, index and offset
@@ -116,7 +120,7 @@ class Cache2w():
 
 
 
-def execution_loop(cache1, cache2, bus, param_dicc):
+def execution_loop(cache1, cache2, param_dicc):
     while (True):
         if not (param_dicc["cmd_from_core1"].poll() or param_dicc["cmd_from_core2"].poll()):
             sleep(1/1000)
@@ -139,18 +143,22 @@ def cacheL1(param_dicc):
     param_dicc1["cmd_from_core"]=param_dicc["cmd_from_core1"]
     param_dicc1["data_from_core"]=param_dicc["data_from_core1"]
     param_dicc1["data_to_core"]=param_dicc["data_to_core1"]
+
+    param_dicc1["cmd_to_cache"]=param_dicc["cmd_to_cache"]
+    param_dicc1["data_from_cache"]=param_dicc["data_from_cache"]
+    param_dicc1["data_to_cache"]=param_dicc["data_to_cache"]
+    
     #cache2
-    param_dicc1["cmd_from_core"]=param_dicc["cmd_from_core2"]
-    param_dicc1["data_from_core"]=param_dicc["data_from_core2"]
-    param_dicc1["data_to_core"]=param_dicc["data_to_core2"]
-    #bus
-    param_dicc_bus["cmd_to_cache"]=param_dicc["cmd_to_cache"]
-    param_dicc_bus["data_from_cache"]=param_dicc["data_from_cache"]
-    param_dicc_bus["data_to_cache"]=param_dicc["data_to_cache"]
+    param_dicc2["cmd_from_core"]=param_dicc["cmd_from_core2"]
+    param_dicc2["data_from_core"]=param_dicc["data_from_core2"]
+    param_dicc2["data_to_core"]=param_dicc["data_to_core2"]
+    
+    param_dicc2["cmd_to_cache"]=param_dicc["cmd_to_cache"]
+    param_dicc2["data_from_cache"]=param_dicc["data_from_cache"]
+    param_dicc2["data_to_cache"]=param_dicc["data_to_cache"]
     
     cache1=Cache2w(16000, 32, param_dicc1)
     cache2=Cache2w(16000, 32, param_dicc2)
-    bus=Bus(param_dicc_bus, cache1, cache2) #FIXME missing implementation
-    cache1.set_bus(bus) #not possibel in the constructor, becasue it does not exist
-    cache2.set_bus(bus)
-    execution_loop(cache1, cache2, bus, param_dicc) 
+    cache1.set_cache(cache2) #not possibel in the constructor, becasue it does not exist
+    cache2.set_cache(cache1)
+    execution_loop(cache1, cache2, param_dicc) 
