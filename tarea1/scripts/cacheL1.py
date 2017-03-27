@@ -19,41 +19,47 @@ from utils import *
 from block import Block #FIXME: maybe another file
 
 #this calss will control the "recent of use"
+
 class Block_pair():
     def __init__(self, block1, block2):
-        self.recent=block1
-        self.not_r=block2
-
+        self.block1=block1
+        self.block2=block2
+        self.count1=0
+        self.count2=0
+        #every time the block is not used, the count is increased
+        #when asked for LRU, returns the block hith highest score
+        
     def get_lru(self):
-        #this will be used in case of miss
-        return self.not_r
+        #this will be used in case of miss, then its counter must return to 0
+        if self.count1>self.count2:
+            self.count1=0
+            return self.block1
+        else:
+            self.count2=0
+            return self.block2
 
     def get_by_tag(self, tag):
         #FIXME:change this implementation to use block methods
-        if self.recent.tag==tag and self.recent.state!="i":
-            return self.recent
-        elif self.not_r.tag==tag and self.not_r.state!="i":
-            #not_r has been used, so must be recent, make swap
-            temp=self.not_r
-            self.not_r=self.recent
-            self.recent=temp
-            return self.recent
+        if self.block1.tag==tag and self.block1.state!="i":
+            self.count2+=1
+            return self.block1
+        elif self.block2.tag==tag and self.block2.state!="i":
+            self.count1+=1
+            return self.block2
         else:
             #none has the tag or all are invalid, then is a miss
             return None
 
     def bus_need_tag(self, tag):
         #returns a block but needed by bus, then recent is not updated
-        if self.recent.tag==tag:
-            return self.recent
-        elif self.not_r.tag==tag:
-            return self.not_r
+        if self.block1.tag==tag and self.block1.state!="i":
+            return self.block1
+        elif self.block2.tag==tag and self.block2.state!="i":
+            return self.block2
         else:
             return None
-            
-        
-        
 
+        
 class Cache2w():
     #data sizr in bytes, block size in bytes, asociativity is a bool
     def __init__(self, data_size, block_size,param_dicc={}):
