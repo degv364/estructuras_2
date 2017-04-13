@@ -16,48 +16,7 @@
 
 from random import randint
 from utils import *
-from block import Block #FIXME: maybe another file
-
-#this calss will control the "recent of use"
-
-class Block_pair():
-    def __init__(self, block1, block2):
-        self.block1=block1
-        self.block2=block2
-        self.count1=0
-        self.count2=0
-        #every time the block is not used, the count is increased
-        #when asked for LRU, returns the block hith highest score
-        
-    def get_lru(self):
-        #this will be used in case of miss, then its counter must return to 0
-        if self.count1>self.count2:
-            self.count1=0
-            return self.block1
-        else:
-            self.count2=0
-            return self.block2
-
-    def get_by_tag(self, tag):
-        #FIXME:change this implementation to use block methods
-        if self.block1.tag==tag and self.block1.state!="i":
-            self.count2+=1
-            return self.block1
-        elif self.block2.tag==tag and self.block2.state!="i":
-            self.count1+=1
-            return self.block2
-        else:
-            #none has the tag or all are invalid, then is a miss
-            return None
-
-    def bus_need_tag(self, tag):
-        #returns a block but needed by bus, then recent is not updated
-        if self.block1.tag==tag and self.block1.state!="i":
-            return self.block1
-        elif self.block2.tag==tag and self.block2.state!="i":
-            return self.block2
-        else:
-            return None
+from block import Block, Block_pair
 
         
 class Cache2w():
@@ -84,44 +43,72 @@ class Cache2w():
     def set_cache(self, cache):
         self.other=cache
 
-    def split_instruction(self):
-        #instruction is a list, fisrt element is adress, return a list with tag, index and offset
-        #instruction coems in hex
-        address=self.instruction[0]
-        ins=hex2bin(address.split('x')[1])
-        offset=ins[-self.offset_size:]
-        index=ins[(-self.index_size-self.offset_size):-self.offset_size]
-        tag=ins[:(-self.index_size-self.offset_size)]
-        return [tag,index,offset]
 
+        
+    def split_instruction(self):
+        #instruction (hex) is a list, fisrt element is address
+        address = self.instruction[0]
+        ins = hex2bin(address.split('x')[1])
+        offset = ins[-self.offset_size:]
+        index = ins[(-self.index_size-self.offset_size):-self.offset_size]
+        tag = ins[:(-self.index_size-self.offset_size)]
+        return [tag, index, offset] #return a list with tag, index and offset
+
+
+    
     def run_instruction(self):
-        self.instruction=self.cmd_from_core.recv()
-        command=self.instruction[1]
-        [tag, index, offset]=self.split_instruction()
-        block_pair=self.data[index]
-        my_block=block_pair.get_by_tag(tag)
-        if not my_block:
-            #will enter here in case of a miss
-            my_block=block_pair.get_lru()
-            #invalidate my_block
+        self.instruction = self.cmd_from_core.recv()
+        command = self.instruction[1]
+        [tag, index, offset] = self.split_instruction()
+        block_pair = self.data[index]
+        my_block = block_pair.get_by_tag(tag) #Hit if not None
+
+        #Miss condition
+        if my_block == None:
+            self.handle_miss(index, tag, block_pair)
+                    
+        #Execute operation            
         if command=="{L}":
             self.core_read(tag, index, offset, my_block)
         else:
             data=self.data_from_core.recv()
             self.core_write(tag, index, offset, my_block, data)
 
+
+
+    def bus_search_block(self, index, tag):
+        block_pair = self.data[index]
+        my_block = block_pair.bus_need_tag(tag)
+        return my_block
+        
+
+    def handle_miss(index, tag, block_pair):
+        #copy block from other L1 or L2 cache
+        my_block = block_pair.get_lru() #Get block to be overwritten
+        other_block = self.other.bus_search_block(index, tag) #Look for block in other L1
+        #FIXME: Check when to invalidate lines
+        if other_block != None: #Block found in other L1
+            my_block.fsm_transition("Miss", True)
+            my_block.write(other_block.data) #Copy data
+            other_block.fsm_transition("BusRd") 
+        else: #Should request block from L2
+            #FIXME: Read block from L2    
+            
     def core_read(tag, index, offset, block):
         #FIXME: missing implementation
         pass
+
+
     
     def core_write(tag, index, offset, block, data):
         #FIXME: missing implementation
         pass
 
+
+    
     def run_command_from_bus(self):
         #FIXME: missing implementation
         pass
-
 
 
 
