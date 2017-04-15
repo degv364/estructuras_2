@@ -132,7 +132,7 @@ class Cache1w():
 
     def execution_loop(self):
         while (True):
-            if not (self.cmd_from_cache.poll():
+            if not self.cmd_from_cache.poll():
                 sleep(1/1000)
             else:
                 #there is a command from cacheL1
