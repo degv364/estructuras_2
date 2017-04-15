@@ -1,0 +1,73 @@
+\documentclass {article}
+
+\usepackage[spanish]{babel}
+\usepackage [T1]{fontenc}
+\usepackage [utf8]{inputenc}
+\usepackage {graphicx}
+\usepackage{subcaption}
+\usepackage{listings}
+
+\begin {document}
+
+\title{Tarea1: Simulación de cahce}
+\author{Daniel García Vaglio}
+\maketitle
+%\begin{abstract}
+
+%\end{abstract}
+
+
+\section{Protocolo MESI}
+El protocolo MESI toma su nombre de las banderas que se utilizan para lograr la concurrencia, que
+indican el estado del bloque. Estas banderas son: "Invalid", "Exclusive", "Shared" y
+"Modified". Invalid implica que el bloque se encuentra inválido, entonces no se pueden hacer
+lecturas del dato. Exclusive se refiere a que el bloque se encuentra válido en esta unidad de cache,
+pero no se encuentra válido en ningún ninguna otra. Luego Shared se refiere a que el bloque se
+encuentra válido en la presente unidad de cahce, pero también se encuentra válido en alguna otra
+unidad de caché (al menos una). Finalmente Modified se utiliza para señalar que el bloque se
+encuentra válido en el presente cache, pero que a diferencia de exclusive y shared, este dato no
+coincide con el dato en memoria RAM.
+
+Este protocolo es utilizado para la concurrencia de los datos en cache, ya que cone l sistema de
+banderas evita que se lea un dato que no es válido (que haya siod escrito por otro Core, y se lee el
+dato sin mutar), y también garantiza que los datos mutados en cache, se guardan en la memoria RAM
+adecuadamente.
+
+
+\section{Implementación}
+Se toma la decisión de implementarlo en Python 2.7 que está disponible en la última versión de
+ubuntu LTS. Primeramente se utiliza una función de "parseo", que lee el documento con las instrucciones
+y las transforma en listas de parejas. Donde en cada entrada, el primer elemento es la dirección, y
+el segundo elemento indica si es de lectura o escritura. Esta lista se pasa al core, para que la
+ejecute.
+
+Para poder emular la concordancia que sucede en el sistema real se utilizan distintos procesos que se
+ejecutan en paralelo. Python ofrece una interfaz de mensajes para poder intercomunicar procesos, por
+lo que se utilizan a modo de puertos de comunicación. De esta manera, por ejemplo los datos que se
+piden de memoria llegan por un puerto, y las instrucciones que se envían a cache van en otro puerto
+distinto. Existen 4 módulos, el primero son los cores, luego los caches L1, otro para el cache L2, y
+finalmente un módulo para la memoria principal. Cada módulo corresponde a una función cuya entrada
+es un diccionario con los puertos de entrada y salida del mismo. La función se encuentra
+constantemente escuchando los puertos de entrada, cuando llega un comando, lo ejecuta y genera los
+datos que se envían por los puertos de salida. 
+
+Como en las instrucciones no se especifican los datos que el core debe escribir, cuando este debe
+escribir un dato, se genera una palabra aleatoria. De igual manera, cuando sucede un miss y se debe
+traer un dato de RAM, se genera un número aleatorio.
+
+\subsection{Cache L1}
+El módulo del cache L1 que crea un objeto tipo cacheL1 con los tamaños requeridos y los puertos de
+salida y entrada. Luego ejecuta el método que se encarga de escuchar las entradas y generar las
+salidas. Este método es un loop que se espera a recibir una instrucción del nivel superior, esta
+llega por el puerto de instrucciones. Cuando llega la instrucción verifica si es de escritura o si
+es de lectura y ejecuta según lo obtenido.
+
+Los miembros de la clase cacheL1 son los siguientes (se explican uno a uno):
+\section{Funcionamiento y Pruebas}
+
+\section{Beneficios de MESI}
+
+\section{Deficiencias de MESI}
+
+
+\end{document}
