@@ -27,8 +27,8 @@ from utils import *
 
 def main():
     #get the instructions----------------------------------------------------------------------
-    instructions_list_core_1=get_addresses("instructions_core_1.txt")
-    instructions_list_core_2=get_addresses("instructions_core_2.txt")
+    instructions_list_core_1=get_addresses("mem_trace_core1.txt")
+    instructions_list_core_2=get_addresses("mem_trace_core2.txt")
     
     #create the connections --------------------------------------------------------------------
     #data cacheL1->core
@@ -56,14 +56,14 @@ def main():
     [data_cache_from_mem, data_mem_to_cache]=Pipe(False)
 
     #parameters in diccionary------------------------------------------------------------------
-    core1_parameters={"instructions":instructions_list_core_1,
-                      "cmd_to_cache":cmd_core1_to_cache1,
-                      "data_from_cache":data_core1_from_cache1,
-                      "data_to_cache":  data_core1_to_cache1}
-    core2_parameters={"instructions":instructions_list_core_1,
-                      "cmd_to_cache": cmd_core2_to_cache2,
-                      "data_from_cache": data_core2_from_cache2,
-                      "data_to_cache":  data_core2_to_cache2} 
+    core_parameters={"instructions_core1":instructions_list_core_1,
+                      "cmd_to_cache1":cmd_core1_to_cache1,
+                      "data_from_cache1":data_core1_from_cache1,
+                      "data_to_cache1":  data_core1_to_cache1,
+                      "instructions_core2":instructions_list_core_1,
+                      "cmd_to_cache2": cmd_core2_to_cache2,
+                      "data_from_cache2": data_core2_from_cache2,
+                      "data_to_cache2":  data_core2_to_cache2} 
 
     cacheL1_parameters={"cmd_from_core1":cmd_cache1_from_core1,
                         "cmd_from_core2": cmd_cache2_from_core2,
@@ -87,21 +87,21 @@ def main():
                     "data_to_cache": data_mem_to_cache}
 
     #create the processes-----------------------------------------------------
-    core1_p=Process(core, core1_parameters)
-    core2_p=Process(core, core2_parameters)
+    core_p=Process(core, core_parameters)
+    
     cacheL1_p=Process(cacheL1, cacheL1_parameters)
     cacheL2_p=Process(cacheL2, cacheL2_parameters)
     mem_p=Process(mem, mem_parameters)
 
     #Process management--------------------------------------------------------------
-    core1_p.start()
-    core2_p.start()
+    core_p.start()
+    
     cacheL1_p.start()
     cacheL2_p.start()
     mem_p.start()
-    core1_p.join()
-    core2_p.join()
-
+    core_p.join()
+    
+    
     cacheL1_p.terminate()
     cacheL2_p.terminate()
     mem_p.terminate()
