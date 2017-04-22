@@ -16,7 +16,7 @@
 
 
 class Block_MVI():
-    def __init__(self, n_state="i", n_tag=None, n_data=None):
+    def __init__(self, n_state="i", n_tag=None, n_data=[]):
         self.state = n_state #three possible values: m (modified), v (valid), i (invalid) 
         self.tag = n_tag
         self.data = n_data  #data is a list with every byte

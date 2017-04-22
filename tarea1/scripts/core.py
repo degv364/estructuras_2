@@ -23,15 +23,17 @@ def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None, data_from
     while counter_core<=len(ins_list_core) and count<3:
         instruction=ins_list_core[counter_core+count]
         if instruction[1]=="{L}":
+            if debug: print "CORE1 read "+instruction[0] 
             cmd_to_cache.send(instruction)
             data=data_from_cache.recv()
         else:
+            if debug: print "CORE1 write "+instruction[0] 
             data_to_cache.send(randint(0,255))
             cmd_to_cache.send(instruction)
         count+=1
         
 
-def core(param_dicc):
+def core(param_dicc, debug):
     ins_list_core1=param_dicc["instructions_core1"]
     cmd_to_cache1=param_dicc["cmd_to_cache1"]
     data_from_cache1=param_dicc["data_from_cache1"]
@@ -58,9 +60,11 @@ def core(param_dicc):
             #execute 1 instruction
             instruction=ins_list_core2[counter_core2]
             if instruction[1]=="{L}":
+                if debug:  print "CORE2 read "+instruction[0] 
                 cmd_to_cache2.send(instruction)
                 data=data_from_cache2.recv()
             else:
+                if debug: print "CORE1 write "+instruction[0]
                 data_to_cache2.send(randint(0,255))
                 cmd_to_cache2.send(instruction)
 

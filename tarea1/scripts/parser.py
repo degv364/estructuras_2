@@ -14,7 +14,9 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
-*
+
+import hex2bin
+
 def get_addresses(filename):
     addresses=[]
     f=open(filename, 'r')
@@ -23,6 +25,7 @@ def get_addresses(filename):
 
     for line in content:
         [address, action]=line.split()
+        address=hex2bin(address.split('x')[1])
         while len(address)<6:
             address="0"+address
         addresses.append([address, "{"+action+"}"])
