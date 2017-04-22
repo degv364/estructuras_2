@@ -15,21 +15,33 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
 
+class Block_MVI():
+    def __init__(self, n_state="i", n_tag=None, n_data=None):
+        self.state = n_state #three possible values: m (modified), v (valid), i (invalid) 
+        self.tag = n_tag
+        self.data = n_data  #data is a list with every byte
 
-class Block():
+    def reset(self):
+        self.state="i"
 
-    def __init__(self, n_state, n_tag, n_data):
+
+class Block_MESI():
+
+    def __init__(self, n_state="i", n_tag=None, n_data=None):
         self.state = n_state
         self.tag = n_tag
-        self.data = n_data
+        self.data = n_data  #data is a list with every byte
 
+        
     #Supposing tag is checked outside of the block
-    def read(self):
-        return self.data
+    def read(self, offset):
+        return self.data[int(offset,2)]
             
-    def write(self, n_data):
-        self.data = n_data
 
+    def write(self, offset, n_data):
+        self.data[int(offset,2)] = n_data
+        
+        
     def fsm_transition(self, request, shared_flag = None): #Shared flag is used in miss cases
         flush = False
         if self.state == "m": flush = self._fsm_m(request, shared_flag)
@@ -55,7 +67,7 @@ class Block():
             self.state = "s"
             flush = True
         elif request == "BusRdX":
-            self.state = "i"
+            self.invalidate()
             flush = True
         return flush
             
@@ -72,7 +84,7 @@ class Block():
         elif request == "BusRd":
             self.state = "s"
         elif request == "BusRdX":
-            self.state = "i"
+            self.invalidate()
             
     def _fsm_s(self, request, shared_flag):
         if request == "Miss":
@@ -87,7 +99,7 @@ class Block():
         elif request == "BusRd":
             self.state = "s"
         elif request == "BusRdX":
-            self.state = "i"
+            self.invalidate()
 
     #FIXME: Check if other cases are necessary
     def _fsm_i(self, request, shared_flag):
@@ -121,24 +133,15 @@ class Block_pair():
             self.count2=0
             return self.block2
 
-    def get_by_tag(self, tag):
+    def get_by_tag(self, tag, update_count=True):
         if self.block1.tag==tag and self.block1.state!="i":
-            self.count2+=1
+            if update_count:
+                self.count2+=1
             return self.block1
         elif self.block2.tag==tag and self.block2.state!="i":
-            self.count1+=1
+            if update_count:
+                self.count1+=1
             return self.block2
         else:
             #none has the tag or all are invalid, then is a miss
             return None
-
-    def bus_need_tag(self, tag):
-        #returns a block but needed by bus, then recent is not updated
-        if self.block1.tag==tag and self.block1.state!="i":
-            return self.block1
-        elif self.block2.tag==tag and self.block2.state!="i":
-            return self.block2
-        else:
-            return None
-
-

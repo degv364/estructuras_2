@@ -16,35 +16,12 @@
 
 from random import randint
 from utils import *
-from block import Block #FIXME: maybe another file
+from block import Block_MVI
 
 
-
-
- class Block1w():
-    #one way block
-    def __init__(self, state="i", tag=None, info=None):
-        #info is a list with every byte
-        self.state=state #four possible values: m, e, s, i
-        self.tag=tag
-        self.info=info
-    def reset(self):
-        self.state="i"
-
-    def request(offset):
-        #return the 4 bytes of the word in offset
-        data=[0,0,0,0]
-        for i in [0,1,2,3]:
-            data[i]=self.info[int(offset,2)+i]
-        return data #return a copy of the object, in ython evetything is a reference
-        
-    def write_on(offset, data):
-        #data is a list with 4 bytes
-        for i in [0,1,2,3]:
-            self.info[int(offset, 2)+i]=data[i]
 
 class Cache1w():
-    #data sizr in bytes, block size in bytes, asociativity is a bool
+    #data size in bytes, block size in bytes, asociativity is a bool
     #note that there is no need for shared, since this cache is alone
     #bus side requests, onlyflush has effect, the rest depend on havin more than one cache
     def __init__(self, data_size, block_size,param_dicc={}):
@@ -62,11 +39,11 @@ class Cache1w():
         self.data={}
         self.instruction=None
         for index in xrange(index_cant):
-            self.data[int2bin(index, self.index_size)]=Block1w()
+            self.data[int2bin(index, self.index_size)]=Block_MVI()
 
     def split_instruction(self, instruction):
-        #instruction is a list, fisrt element is adress, return a list with tag, index and offset
-        #instruction coems in hex
+        #instruction is a list, first element is address, return a list with tag, index and offset
+        #instruction comes in hex
         address=instruction[0]
         ins=hex2bin(address.split('x')[1])
         offset=ins[-self.offset_size:]
@@ -79,53 +56,32 @@ class Cache1w():
         command=instruction[1]
         [tag, index, offset]=self.split_instruction(instruction)
         my_block=self.data[index]
-        if tag!=my_block.tag:
-            #miss, invalidate block
-            my_block.invalidate() #FIXME: missing implementation
+        
+        if tag!=my_block.tag: #Miss
+            self.handle_miss() #FIXME: missing implementation
         if command=="{L}":
-            self.core_read(tag, index, offset)
+            self.cache_read(tag, index, offset)
         else:
-            self.core_write(tag, index, offset, data)
+            self.cache_write(tag, index, offset, data)
 
-    def core_read(self, tag, index, offset):
+    def cache_read(self, tag, index, offset):
         my_block=self.data[index]
-        if my_block.state=="i":
-            #invalid
-            #FIXME: this will change to block methods!******
-            #my_block.info=self.fetch_from_memory(tag, index, offset)
-            #my_block.tag=tag
-            #my_block.state="e"
-        self.data_to_cache.send(my_block.info)
+        self.data_to_cache.send(my_block.data)
 
-    def core_write(self, tag, index, offset):
+    def cache_write(self, tag, index, offset):
         my_block=self.data[index]
         
-        if my_block.state=="i":
-            self.busRdX(tag, index, offset)
-
-        #FIXME, this will be done by the block, not externally
-        #my_block.state="m"
-        #my_block.info=self.data_from_cache.recv() 
-
 
     def fetch_from_memory(self, tag, index, offset):
         self.cmd_to_mem.send(self.instruction)
         return self.data_from_mem.recv()
 
-    def busRd(self, tag, index, offset):
-        pass #esto en realidad no se usa para el one way associative
-
-    def busRdX(self, tag, index, offset):
-        my_block=self.data[index]
-        if my_block.state=="m" or my_block.state=="e":
-            #self.flush(tag, index, offset)
-            #my_block.state="i"
-        
-    def flush(self, tag, index, offset):
+    
+    def flush(self, tag, index, offset): #FIXME: Check when to flush 
         #generate a write instruction for memory
         ins=[tag+index+offset, "{S}"]
         my_block=self.data[index]
-        data=my_block.info
+        data=my_block.data
         self.data_to_mem.send(data)
         self.cmd_to_mem.send(ins)
 
@@ -145,13 +101,6 @@ class Cache1w():
 
 
 
-
 def cacheL2(param_dicc):
     cache=Cache1w(128000, 32,param_dicc)
     cache.execution_loop() 
-
-    
-
-
-    
-

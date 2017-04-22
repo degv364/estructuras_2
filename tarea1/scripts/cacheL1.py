@@ -16,11 +16,11 @@
 
 from random import randint
 from utils import *
-from block import Block, Block_pair
+from block import Block_MESI, Block_pair
 
         
 class Cache2w():
-    #data sizr in bytes, block size in bytes, asociativity is a bool
+    #data size in bytes, block size in bytes, asociativity is a bool
     def __init__(self, data_size, block_size,param_dicc={}):
         #cache interacts via ports only with core
         self.cmd_from_core=param_dicc["cmd_from_core"]
@@ -32,13 +32,13 @@ class Cache2w():
         self.data_to_cache=param_dicc["data_to_cache"]
         
         index_cant=data_size/block_size; #for one way
-        index_cant=index_cant/2#for 2 way associative
+        index_cant=index_cant/2 #for 2 way associative
         self.index_size=int(log2(index_cant));
         self.offset_size=int(log2(block_size))
         self.data={}
         self.instruction=None
         for index in xrange(index_cant):
-            self.data[int2bin(index, self.index_size)]=Block_pair(Block(), Block())
+            self.data[int2bin(index, self.index_size)]=Block_pair(Block_MESI(), Block_MESI())
 
     def set_cache(self, cache):
         self.other=cache
@@ -46,7 +46,7 @@ class Cache2w():
 
         
     def split_instruction(self):
-        #instruction (hex) is a list, fisrt element is address
+        #instruction (hex) is a list, first element is address
         address = self.instruction[0]
         ins = hex2bin(address.split('x')[1])
         offset = ins[-self.offset_size:]
@@ -66,22 +66,17 @@ class Cache2w():
         #Miss condition
         if my_block == None:
             self.handle_miss(index, tag, block_pair)
-                    
+            my_block = block_pair.get_by_tag(tag)
+            
         #Execute operation            
         if command=="{L}":
-            self.core_read(tag, index, offset, my_block)
+            self.core_read(my_block, offset)
         else:
-            data=self.data_from_core.recv()
-            self.core_write(tag, index, offset, my_block, data)
+            data = self.data_from_core.recv()
+            self.core_write(my_block, offset, data)
 
 
-
-    def bus_search_block(self, index, tag):
-        block_pair = self.data[index]
-        my_block = block_pair.bus_need_tag(tag)
-        return my_block
-        
-
+            
     def handle_miss(index, tag, block_pair):
         #copy block from other L1 or L2 cache
         my_block = block_pair.get_lru() #Get block to be overwritten
@@ -89,27 +84,29 @@ class Cache2w():
         #FIXME: Check when to invalidate lines
         if other_block != None: #Block found in other L1
             my_block.fsm_transition("Miss", True)
-            my_block.write(other_block.data) #Copy data
+            my_block.data = other_block.data #Copy data
             other_block.fsm_transition("BusRd") 
         else: #Should request block from L2
-            #FIXME: Read block from L2    
+            my_block.fsm_transition("Miss", False)
+            request = [tag+index+"000", "{L}"]
+            self.cmd_to_cache.send(request)
+            my_block.data = self.data_from_cache.recv()
             
-    def core_read(tag, index, offset, block):
-        #FIXME: missing implementation
-        pass
-
-
-    
-    def core_write(tag, index, offset, block, data):
-        #FIXME: missing implementation
-        pass
-
+            
+    def core_read(self, block, offset):
+        data = block.read(offset)
+        block.fsm_transition("PrRd")
+        self.data_to_core.send(data)
 
     
-    def run_command_from_bus(self):
-        #FIXME: missing implementation
-        pass
+    def core_write(self, block, offset, data):
+        block.write(offset, data)
+        block.fsm_transition("PrWr")
 
+    def bus_search_block(self, index, tag):
+        block_pair = self.data[index]
+        my_block = block_pair.get_by_tag(tag, False)
+        return my_block
 
 
 
@@ -123,10 +120,8 @@ def execution_loop(cache1, cache2, param_dicc):
                 #command is from core 1
                 cache1.run_instruction()
             else:
-                #command is from core2
+                #command is from core 2
                 cache2.run_instruction()
-
-
 
 
 
@@ -152,6 +147,6 @@ def cacheL1(param_dicc):
     
     cache1=Cache2w(16000, 32, param_dicc1)
     cache2=Cache2w(16000, 32, param_dicc2)
-    cache1.set_cache(cache2) #not possibel in the constructor, becasue it does not exist
+    cache1.set_cache(cache2) #not possible in the constructor, because it does not exist
     cache2.set_cache(cache1)
     execution_loop(cache1, cache2, param_dicc) 

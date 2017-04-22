@@ -24,7 +24,7 @@ def core(param_dicc):
     data_from_cache=param_dicc["data_from_cache"]
     data_to_cache=param_dicc["data_to_cache"]
 
-    sleep(0.5)#wait for the rest to initialize
+    sleep(0.5) #wait for the rest to initialize
     
     for instruction in ins_list:
         if instruction[1]="{L}":
