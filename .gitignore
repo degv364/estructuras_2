@@ -4,4 +4,8 @@
 *.x
 *.a
 *~
+*.aux
+*.log
+*.pdf
+
 *.pyc
