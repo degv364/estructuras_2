@@ -22,6 +22,9 @@ def get_addresses(filename):
     content=content.split('\n')
 
     for line in content:
-        addresses.append(line.split())
+        [address, action]=line.split()
+        while len(address)<6:
+            address="0"+address
+        addresses.append([address, "{"+action+"}"])
     f.close()
     return addresses

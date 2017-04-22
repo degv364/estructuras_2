@@ -41,17 +41,23 @@ se tiene que tomar en cuenta que el cache recibe instrucciones desde el core, en
 accesar a un bloque específico. Dependiendo de la bandera en el bloque el bus debe ejecutar
 instrucciones específicas, a continuación se muestra un resumen:
 \begin{center}
- \begin{tabular}{|c | c | c |} 
+ \begin{tabular}{|c | c | l |} 
  \hline
  Instrucción & Bandera & Acción \\ 
  \hline
- \multirow{4}{4em}{Core Read}  & Modified & 787 \\ 
+   \multirow{4}{*}{Core Read}  & Modified & \textbullet Estado permanece igual \\
+                               &          & \textbullet Hit \\ \cline{2-3}
    
-  & Exclusive & 5415 \\
+             & Exclusive & \textbullet Estado permanece igual \\
+             &           & \textbullet Hit \\ \cline{2-3}
  
-  & Shared & 7507 \\
+             & Shared & \textbullet Estado permanece igual  \\
+             &        & \textbullet Hit \\ \cline{2-3}
  
-  & Invalid & 7560 \\
+             & Invalid & \textbullet Enviar comando BusRead al Bus \\
+             &         & \textbullet Se hace fetch al nivel siguiente de cache\\
+             &         & \textbullet Verificar si el dato está en otro cache\\
+             &         & \textbullet Si está pasar a Shared, si no pasar a Exclusive \\ \cline{2-3}
  \hline
   88 & 788 & 6344 \\ [1ex] 
  \hline
