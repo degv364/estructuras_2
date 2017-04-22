@@ -87,11 +87,10 @@ def main():
                     "data_to_cache": data_mem_to_cache}
 
     #create the processes-----------------------------------------------------
-    core_p=Process(core, core_parameters)
-    
-    cacheL1_p=Process(cacheL1, cacheL1_parameters)
-    cacheL2_p=Process(cacheL2, cacheL2_parameters)
-    mem_p=Process(mem, mem_parameters)
+    core_p=Process(target=core, args=(core_parameters, debug))
+    cacheL1_p=Process(target=cacheL1, args=(cacheL1_parameters, debug))
+    cacheL2_p=Process(target=cacheL2, args=(cacheL2_parameters, debug))
+    mem_p=Process(target=mem, args=(mem_parameters, debug))
 
     #Process management--------------------------------------------------------------
     core_p.start()

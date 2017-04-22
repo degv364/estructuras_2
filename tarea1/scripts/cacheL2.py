@@ -22,8 +22,8 @@ from block import Block_MVI
 
 class Cache1w():
     # data size and block size in bytes. 
-    def __init__(self, data_size, block_size,param_dicc={}):
-
+    def __init__(self, data_size, block_size,param_dicc={}, debug=False):
+        self.debug=debug
         self.cmd_from_cache=param_dicc["cmd_from_cache"]
         self.data_from_cache=param_dicc["data_from_cache"]
         self.data_from_mem=param_dicc["data_from_mem"]
@@ -62,16 +62,19 @@ class Cache1w():
             self.cache_write(tag, index, offset, data)
 
     def cache_read(self, tag, index, offset):
+        if self.debug: print "CACHEL2 send to L1 "+tag+index+offset
         my_block=self.data[index]
         self.data_to_cache.send(my_block.n_data)#send whole block data
 
     def cache_write(self, tag, index, offset):
+        if self.debug: print "CACHEL2 recv from L1 "+tag+index+offset
         my_block=self.data[index]
         if my_block.n_state=="v": #impossible to have invalid. if modified -> no state change
             my_block.n_state=="m"
         my_block.n_data=self.data_from_cache.recv()#cahceL1 sent whole block data
             
     def handle_miss(self, tag, index, offset):
+        if self.debug: print "CACHEL2 miss "+tag+index+offset
         my_block=self.data[index]
         if my_block.n_state=="m":
             self.flush(tag, index, offset)
@@ -80,12 +83,14 @@ class Cache1w():
         
     
     def fetch_from_memory(self, tag, index, offset):
+        if self.debug: print "CACHEL2 fecthing from mem "+tag+index+offset
         ins=[tag+index+offset, "{L}"]
         self.cmd_to_mem.send(ins)
         return self.data_from_mem.recv()
     
     def flush(self, tag, index, offset): #FIXME: Check when to flush 
         #generate a write instruction for memory
+        if self.debug: print "CACHEL2 flushing "+tag+index+offset
         ins=[tag+index+offset, "{S}"]
         my_block=self.data[index]
         data=my_block.n_data
@@ -105,6 +110,6 @@ class Cache1w():
                     data=None
                 self.run_instruction(instruction, data) #FIXME: change implementation
 
-def cacheL2(param_dicc):
-    cache=Cache1w(128000, 32,param_dicc)
+def cacheL2(param_dicc, debug):
+    cache=Cache1w(128000, 32,param_dicc, debug)
     cache.execution_loop() 
