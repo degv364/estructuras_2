@@ -21,9 +21,7 @@ from block import Block_MVI
 
 
 class Cache1w():
-    #data size in bytes, block size in bytes, asociativity is a bool
-    #note that there is no need for shared, since this cache is alone
-    #bus side requests, onlyflush has effect, the rest depend on havin more than one cache
+    # data size and block size in bytes. 
     def __init__(self, data_size, block_size,param_dicc={}):
 
         self.cmd_from_cache=param_dicc["cmd_from_cache"]
@@ -41,24 +39,23 @@ class Cache1w():
         for index in xrange(index_cant):
             self.data[int2bin(index, self.index_size)]=Block_MVI()
 
-    def split_instruction(self, instruction):
+    def split_instruction(self, ins):
         #instruction is a list, first element is address, return a list with tag, index and offset
-        #instruction comes in hex
-        address=instruction[0]
-        ins=hex2bin(address.split('x')[1])
+        
+        address=ins[0]
         offset=ins[-self.offset_size:]
         index=ins[(-self.index_size-self.offset_size):-self.offset_size]
         tag=ins[:(-self.index_size-self.offset_size)]
         return [tag,index,offset]
 
-    def run_instruction(self, instruction, data):
+    def run_instruction(self, instruction=None, data=None):
         self.instruction=instruction
         command=instruction[1]
         [tag, index, offset]=self.split_instruction(instruction)
         my_block=self.data[index]
         
-        if tag!=my_block.tag: #Miss
-            self.handle_miss() #FIXME: missing implementation
+        if tag!=my_block.n_tag or my_block.n_state=="i": #Miss, invalid in case tag==0
+            self.handle_miss(tag, index, offset)
         if command=="{L}":
             self.cache_read(tag, index, offset)
         else:
@@ -66,25 +63,34 @@ class Cache1w():
 
     def cache_read(self, tag, index, offset):
         my_block=self.data[index]
-        self.data_to_cache.send(my_block.data)
+        self.data_to_cache.send(my_block.n_data)#send whole block data
 
     def cache_write(self, tag, index, offset):
         my_block=self.data[index]
+        if my_block.n_state=="v": #impossible to have invalid. if modified -> no state change
+            my_block.n_state=="m"
+        my_block.n_data=self.data_from_cache.recv()#cahceL1 sent whole block data
+            
+    def handle_miss(self, tag, index, offset):
+        my_block=self.data[index]
+        if my_block.n_state=="m":
+            self.flush(tag, index, offset)
+        my_block.n_data=self.fetch_from_memory(tag, index, offset)
+        my_block.n_state="v"
         
-
+    
     def fetch_from_memory(self, tag, index, offset):
-        self.cmd_to_mem.send(self.instruction)
+        ins=[tag+index+offset, "{L}"]
+        self.cmd_to_mem.send(ins)
         return self.data_from_mem.recv()
-
     
     def flush(self, tag, index, offset): #FIXME: Check when to flush 
         #generate a write instruction for memory
         ins=[tag+index+offset, "{S}"]
         my_block=self.data[index]
-        data=my_block.data
+        data=my_block.n_data
         self.data_to_mem.send(data)
         self.cmd_to_mem.send(ins)
-
 
     def execution_loop(self):
         while (True):
@@ -98,8 +104,6 @@ class Cache1w():
                 else:
                     data=None
                 self.run_instruction(instruction, data) #FIXME: change implementation
-
-
 
 def cacheL2(param_dicc):
     cache=Cache1w(128000, 32,param_dicc)
