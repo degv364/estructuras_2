@@ -40,15 +40,15 @@ class Cache2w():
         for index in xrange(index_cant):
             self.data[int2bin(index, self.index_size)]=Block_pair(Block_MESI(), Block_MESI())
 
+
+            
     def set_cache(self, cache):
         self.other=cache
 
 
         
     def split_instruction(self):
-        #instruction (hex) is a list, first element is address
-        address = self.instruction[0]
-        ins = hex2bin(address.split('x')[1])
+        ins = self.instruction[0]
         offset = ins[-self.offset_size:]
         index = ins[(-self.index_size-self.offset_size):-self.offset_size]
         tag = ins[:(-self.index_size-self.offset_size)]
@@ -66,7 +66,7 @@ class Cache2w():
         #Miss condition
         if my_block == None:
             self.handle_miss(index, tag, block_pair)
-            my_block = block_pair.get_by_tag(tag)
+            my_block = block_pair.get_by_tag(tag) #Fetch block again
             
         #Execute operation            
         if command=="{L}":
@@ -81,28 +81,60 @@ class Cache2w():
         #copy block from other L1 or L2 cache
         my_block = block_pair.get_lru() #Get block to be overwritten
         other_block = self.other.bus_search_block(index, tag) #Look for block in other L1
-        #FIXME: Check when to invalidate lines
-        if other_block != None: #Block found in other L1
-            my_block.fsm_transition("Miss", True)
-            my_block.data = other_block.data #Copy data
-            other_block.fsm_transition("BusRd") 
-        else: #Should request block from L2
-            my_block.fsm_transition("Miss", False)
-            request = [tag+index+"000", "{L}"]
-            self.cmd_to_cache.send(request)
-            my_block.data = self.data_from_cache.recv()
+
+        if other_block is not None: #Block found in other L1
+            #Flush my_block data to L2
+            my_flush = my_block.fsm_transition("Miss", True)
+            if my_flush == True: self.flush(index, my_block.tag, my_block.data)
+
+            #Flush other_block data to L2
+            other_flush = other_block.fsm_transition("BusRd")
+            if other_flush == True: self.flush(index, other_block.tag, other_block.data)
+
+            #Copy data from other block
+            my_block.data = other_block.data 
+        else:
+            #Flush my_block data to L2
+            my_flush = my_block.fsm_transition("Miss", True)
+            if my_flush == True: self.flush(index, my_block.tag, my_block.data)
+
+            #Copy data from L2 cache
+            my_block.data = self.fetch(index, my_block.tag)
             
+
             
-    def core_read(self, block, offset):
-        data = block.read(offset)
-        block.fsm_transition("PrRd")
+    def core_read(self, my_block, offset):
+        data = my_block.read(offset)
+        my_block.fsm_transition("PrRd")
         self.data_to_core.send(data)
 
-    
-    def core_write(self, block, offset, data):
-        block.write(offset, data)
-        block.fsm_transition("PrWr")
 
+        
+    def core_write(self, my_block, index, offset, data):
+        if block.state == "s": #If line is shared invalidate others
+            other_block = self.other.bus_search_block(index, my_block.tag)
+            if other_block is not None:
+                other_block.fsm_transition("BusRdX") #Invalidate
+            
+        block.fsm_transition("PrWr")
+        block.write(offset, data)
+
+        
+        
+    def fetch(self, index, tag):
+        ins = [tag+index+"00000", "{L}"]
+        self.cmd_to_cache.send(ins)
+        return self.data_from_cache.recv()
+
+    
+
+    def flush(self, index, tag, data):
+        self.data_to_cache.send(data)
+        ins = [tag+index+"00000", "{S}"]
+        self.cmd_to_cache.send(ins)
+
+
+        
     def bus_search_block(self, index, tag):
         block_pair = self.data[index]
         my_block = block_pair.get_by_tag(tag, False)
@@ -126,7 +158,6 @@ def execution_loop(cache1, cache2, param_dicc):
 
 
 def cacheL1(param_dicc):
-    #FIXME: prepare param diccionaries for the caches
     #cache1
     param_dicc1["cmd_from_core"]=param_dicc["cmd_from_core1"]
     param_dicc1["data_from_core"]=param_dicc["data_from_core1"]

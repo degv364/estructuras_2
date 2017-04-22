@@ -68,7 +68,7 @@ class Block_MESI():
             flush = True
         elif request == "BusRdX":
             self.invalidate()
-            flush = True
+            #flush = True
         return flush
             
     def _fsm_e(self, request, shared_flag):
@@ -91,7 +91,7 @@ class Block_MESI():
             if shared_flag:
                 self.state = "s"
             else:
-                self.state = "e"                
+                self.state = "e"
         elif request == "PrRd":
             self.state = "s"
         elif request == "PrWr":
