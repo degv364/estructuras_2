@@ -19,33 +19,48 @@ from utils import *
 from block import Block_MVI
 
 
-
+#One way L1 cache class, applies normal Write-back approach to blocks (not MESI)
 class Cache1w():
-    # data size and block size in bytes. 
+    #Constructor of the class Cache1w, data size in bytes, block size in bytes
     def __init__(self, data_size, block_size,param_dicc={}, debug=False):
         self.debug=debug
+        #Interface ports to communicate with L1 cache (Python Multiprocessing Pipe)
         self.cmd_from_cache=param_dicc["cmd_from_cache"]
         self.data_from_cache=param_dicc["data_from_cache"]
-        self.data_from_mem=param_dicc["data_from_mem"]
-        self.cmd_to_mem=param_dicc["cmd_to_mem"]
-        self.data_to_mem=param_dicc["data_to_mem"]
         self.data_to_cache=param_dicc["data_to_cache"]
         
-        index_cant=data_size/block_size;
-        self.index_size=int(log2(index_cant));
-        self.offset_size=int(log2(block_size))
-        self.data={}
-        self.instruction=None
-        for index in xrange(index_cant):
-            self.data[int2bin(index, self.index_size)]=Block_MVI()
-
-    def split_instruction(self, ins):
-        #instruction is a list, first element is address, return a list with tag, index and offset
+        #Interface ports to communicate with Main Memory (Python Multiprocessing Pipe)
+        self.cmd_to_mem=param_dicc["cmd_to_mem"]
+        self.data_from_mem=param_dicc["data_from_mem"]
+        self.data_to_mem=param_dicc["data_to_mem"]
         
+        #Amount of sets in L2 cache
+        index_size=data_size/block_size;
+
+        #Index width of bits in address
+        self.index_width=int(log2(index_size));
+
+        #Offset width of bits address
+        self.offset_width=int(log2(block_size))
+
+        #Dictionary that contains the blocks
+        self.data={}
+
+        #Instruction given by L1 cache
+        self.instruction=None
+
+        #Fill data dictionary with blocks
+        for index in xrange(index_size):
+            self.data[int2bin(index, self.index_width)]=Block_MVI()
+
+    #Function that splits the address given by cache instruction in tag, index and offset    
+    def split_instruction(self, ins):
+
+        #instruction is a list, first element is address
         address=ins[0]
-        offset=ins[-self.offset_size:]
-        index=ins[(-self.index_size-self.offset_size):-self.offset_size]
-        tag=ins[:(-self.index_size-self.offset_size)]
+        offset=ins[-self.offset_width:]
+        index=ins[(-self.index_width-self.offset_width):-self.offset_width]
+        tag=ins[:(-self.index_width-self.offset_width)]
         return [tag,index,offset]
 
     def run_instruction(self, instruction=None, data=None):

@@ -18,12 +18,11 @@ from random import randint
 from utils import *
 from block import Block_MESI, Block_pair
 
-#Two way associative L1 cache class, applies MESI protocol to blocks        
+#Two way associative L1 cache class, applies MESI protocol to blocks
 class Cache2w():
 
     #Constructor of the class Cache2w, data size in bytes, block size in bytes
     def __init__(self, data_size, block_size,param_dicc={}):
-        #cache interacts via ports only with core -> FIXME: Is this true?
         #Interface ports to communicate with local core (Python Multiprocessing Pipe)
         self.cmd_from_core=param_dicc["cmd_from_core"]
         self.data_from_core=param_dicc["data_from_core"]
@@ -34,14 +33,14 @@ class Cache2w():
         self.data_from_cache=param_dicc["data_from_cache"]
         self.data_to_cache=param_dicc["data_to_cache"]
 
-        #Amount of sets
+        #Amount of sets in L1 cache
         index_size=data_size/block_size; #Number of ways
         index_size=index_size/2 #Number of sets (2 way associative)
 
-        #Index width of bits
+        #Index width of bits in address
         self.index_width=int(log2(index_size));
 
-        #Offset width of bits
+        #Offset width of bits address
         self.offset_width=int(log2(block_size))
 
         #Dictionary that contains the block pairs (sets)
@@ -153,7 +152,7 @@ class Cache2w():
     #Function that reads required block from L2 cache
     def fetch(self, index, tag):
         #Assemble a read request to L2 cache
-        cache_request = [tag+index+"00000", "{L}"] 
+        cache_request = [tag+index+("0"*self.offset_width), "{L}"] 
         #Send request to L2 cache
         self.cmd_to_cache.send(cache_request)
         #Returns data received from L2 cache
@@ -165,7 +164,7 @@ class Cache2w():
         #Send data to be written in L2 cache
         self.data_to_cache.send(data)
         #Assemble a write request to L2 cache
-        cache_request = [tag+index+"00000", "{S}"]
+        cache_request = [tag+index+("0"*self.offset_width), "{S}"]
         #Send request to L2 cache
         self.cmd_to_cache.send(cache_request)
 
