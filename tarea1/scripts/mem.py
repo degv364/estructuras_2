@@ -18,44 +18,47 @@
 from random import randint
 from time import sleep
 
+#Main memory class
 class Main_memory():
+    #Constructor of the class Main_memory
     def __init__(self, ports, debug=False):
-        self.main_dictionary={}
+        self.mem_data={}
         self.cmd_from_cache=ports["cmd_from_cache"]
         self.data_from_cache=ports["data_from_cache"]
         self.data_to_cache=ports["data_to_cache"]
         self.debug=debug
-        
+
+    #Function that generates a block wrapping 32 random bytes
     def generate_block(self):
         block=[]
         for i in xrange(32):
-            #generate 32 random bytes
             block.append(randint(0,255))
         return block
 
+    #Function that stores a block in corresponding memory location
     def store_block(self, address, block):
-        self.main_dictionary[address]=block
-        
+        self.mem_data[address]=block
+
+    #Function that simulates main memory circuit behavior by an infinite loop
     def execution_loop(self):
         while True:
-            instruction=cmd_from_cache.recv()
-                
-            if instruction[1]=="{L}":
-                if self.debug: print "MEM: read from "+instruction[0]
-                if instruction[0] in main_dictionary:
-                    self.data_to_cache.send(main_dictionary[instruction[0]])
+            [address, command] = cmd_from_cache.recv()
+            
+            if command == "{L}":
+                if self.debug: print "MEM: read from "+address
+                if address in mem_data:
+                    self.data_to_cache.send(mem_data[address])
                 else:
-                    block=self.generate_block()
-                    self.store_block(instruction[0], block)
+                    block = self.generate_block()
+                    self.store_block(address, block)
                     self.data_to_cache.send(block)
             else:
-                if self.debug: print "MEM: write to "+instruction[0]
-                self.store_block(instruction[0], self.data_from_cache.recv())
+                if self.debug: print "MEM: write to "+address
+                self.store_block(address, self.data_from_cache.recv())
                     
-
-def mem(param_dicc):
-    
-    memory=Main_memory(param_dicc, debug)
+#Function to be run by main memory process
+def mem(ports):
+    memory=Main_memory(ports, debug)
     memory.execution_loop()
 
     

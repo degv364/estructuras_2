@@ -14,43 +14,49 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-
+#Regular Write-back block class
 class Block_MVI():
+    #Constructor of the class Block_MVI
     def __init__(self, n_state="i", n_tag=None, n_data=[]):
-        self.state = n_state #three possible values: m (modified), v (valid), i (invalid) 
+        self.state = n_state #Three possible values: m (modified), v (valid), i (invalid) 
         self.tag = n_tag
-        self.data = n_data  #data is a list with every byte
+        self.data = n_data  #Data is a list of bytes
 
-    def reset(self):
+    #Function that invalidates block
+    def invalidate(self):
         self.state="i"
 
-
+#MESI protocol block class
 class Block_MESI():
-
-    def __init__(self, n_state="i", n_tag=None, n_data=None):
+    #Constructor of the class Block_MESI
+    def __init__(self, n_state="i", n_tag=None, n_data=[]):
         self.state = n_state
         self.tag = n_tag
-        self.data = n_data  #data is a list with every byte
+        self.data = n_data  #Data is a list with every byte
 
         
-    #Supposing tag is checked outside of the block
+    #Function that reads a single byte from block as determined by offset
     def read(self, offset):
         return self.data[int(offset,2)]
-            
 
+    
+    #Function that writes a single byte from block as determined by offset
     def write(self, offset, n_data):
         self.data[int(offset,2)] = n_data
+
         
-        
+    #Function in charge of handling FSM transition of block
     def fsm_transition(self, request, shared_flag = None): #Shared flag is used in miss cases
-        flush = False
+        flush = False #This flag indicates if a flush is required
+        #Cases for block state
         if self.state == "m": flush = self._fsm_m(request, shared_flag)
         elif self.state == "e": self._fsm_e(request, shared_flag)
         elif self.state == "s": self._fsm_s(request, shared_flag)
         elif self.state == "i": self._fsm_i(request, shared_flag)
         return flush
-            
-            
+
+    
+    #Function that defines the FSM transition for 'm' case
     def _fsm_m(self, request, shared_flag):
         flush = False
         if request == "Miss":
@@ -68,9 +74,9 @@ class Block_MESI():
             flush = True
         elif request == "BusRdX":
             self.invalidate()
-            #flush = True
-        return flush
-            
+        return flush  #Asserts a flush if required
+
+    #Function that defines the FSM transition for 'e' case
     def _fsm_e(self, request, shared_flag):
         if request == "Miss":
             if shared_flag:
@@ -86,6 +92,7 @@ class Block_MESI():
         elif request == "BusRdX":
             self.invalidate()
             
+    #Function that defines the FSM transition for 's' case
     def _fsm_s(self, request, shared_flag):
         if request == "Miss":
             if shared_flag:
@@ -100,48 +107,53 @@ class Block_MESI():
             self.state = "s"
         elif request == "BusRdX":
             self.invalidate()
-
-    #FIXME: Check if other cases are necessary
+    
+    #Function that defines the FSM transition for 'i' case
     def _fsm_i(self, request, shared_flag):
         if request == "Miss": 
             if shared_flag:
                 self.state = "s"
             else:
                 self.state = "e"
+
                 
-            
+    #Function that invalidates block
     def invalidate(self):
         self.state = "i"
-            
-#this class will control the "recent of use"
 
+        
+#Two way set (block pair) class. Applies LRU policy
 class Block_pair():
+    #Constructor of the class Block_pair
     def __init__(self, block1, block2):
         self.block1=block1
         self.block2=block2
         self.count1=0
         self.count2=0
-        #every time the block is not used, the count is increased
-        #when asked for LRU, returns the block with highest score
         
+
+    #Function that returns the LRU block (highest score)
     def get_lru(self):
-        #this will be used in case of miss, then its counter must return to 0
+        #This will be used in case of miss. Block counter must return to 0
         if self.count1>self.count2:
-            self.count1=0
+            self.count1 = 0
             return self.block1
         else:
-            self.count2=0
+            self.count2 = 0
             return self.block2
 
+        
+    #Function that returns block with matching tag, or None in case of miss
     def get_by_tag(self, tag, update_count=True):
-        if self.block1.tag==tag and self.block1.state!="i":
+        #Every time the block is not used, the count is increased
+        if self.block1.tag == tag and self.block1.state != "i":
             if update_count:
-                self.count2+=1
+                self.count2 += 1
             return self.block1
-        elif self.block2.tag==tag and self.block2.state!="i":
+        elif self.block2.tag == tag and self.block2.state != "i":
             if update_count:
-                self.count1+=1
+                self.count1 += 1
             return self.block2
         else:
-            #none has the tag or all are invalid, then is a miss
+            #None has the tag or all are invalid, then it is a miss
             return None

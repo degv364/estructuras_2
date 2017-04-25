@@ -19,28 +19,28 @@ from utils import *
 from block import Block_MVI
 
 
-#One way L1 cache class, applies normal Write-back approach to blocks (not MESI)
+#One way L2 cache class, applies regular Write-back approach to blocks (not MESI)
 class Cache1w():
     #Constructor of the class Cache1w, data size in bytes, block size in bytes
-    def __init__(self, data_size, block_size,param_dicc={}, debug=False):
+    def __init__(self, data_size, block_size, ports={}, debug=False):
         self.debug=debug
         #Interface ports to communicate with L1 cache (Python Multiprocessing Pipe)
-        self.cmd_from_cache=param_dicc["cmd_from_cache"]
-        self.data_from_cache=param_dicc["data_from_cache"]
-        self.data_to_cache=param_dicc["data_to_cache"]
+        self.cmd_from_cache=ports["cmd_from_cache"]
+        self.data_from_cache=ports["data_from_cache"]
+        self.data_to_cache=ports["data_to_cache"]
         
-        #Interface ports to communicate with Main Memory (Python Multiprocessing Pipe)
-        self.cmd_to_mem=param_dicc["cmd_to_mem"]
-        self.data_from_mem=param_dicc["data_from_mem"]
-        self.data_to_mem=param_dicc["data_to_mem"]
+        #Interface ports to communicate with main memory (Python Multiprocessing Pipe)
+        self.cmd_to_mem=ports["cmd_to_mem"]
+        self.data_from_mem=ports["data_from_mem"]
+        self.data_to_mem=ports["data_to_mem"]
         
-        #Amount of sets in L2 cache
+        #Amount of blocks in L2 cache
         index_size=data_size/block_size;
 
         #Index width of bits in address
         self.index_width=int(log2(index_size));
 
-        #Offset width of bits address
+        #Offset width of bits in address
         self.offset_width=int(log2(block_size))
 
         #Dictionary that contains the blocks
@@ -53,78 +53,103 @@ class Cache1w():
         for index in xrange(index_size):
             self.data[int2bin(index, self.index_width)]=Block_MVI()
 
+
     #Function that splits the address given by cache instruction in tag, index and offset    
-    def split_instruction(self, ins):
-
+    def split_address(self):
         #instruction is a list, first element is address
-        address=ins[0]
-        offset=ins[-self.offset_width:]
-        index=ins[(-self.index_width-self.offset_width):-self.offset_width]
-        tag=ins[:(-self.index_width-self.offset_width)]
-        return [tag,index,offset]
+        address = self.instruction[0]
+        offset = address[-self.offset_width:]
+        index = address[(-self.index_width-self.offset_width):-self.offset_width]
+        tag = address[:(-self.index_width-self.offset_width)]
+        return [tag, index, offset] #return a list with tag, index and offset
 
-    def run_instruction(self, instruction=None, data=None):
-        self.instruction=instruction
-        command=instruction[1]
-        [tag, index, offset]=self.split_instruction(instruction)
-        my_block=self.data[index]
-        
-        if tag!=my_block.n_tag or my_block.n_state=="i": #Miss, invalid in case tag==0
-            self.handle_miss(tag, index, offset)
-        if command=="{L}":
-            self.cache_read(tag, index, offset)
-        else:
-            self.cache_write(tag, index, offset, data)
+    
+    #Function that executes the instruction given by the L1 cache
+    def run_instruction(self):
+        #Using pipe port to get core instruction
+        self.instruction = self.cmd_from_cache.recv()
+        command = self.instruction[1]
+        [tag, index, offset] = self.split_address()
 
-    def cache_read(self, tag, index, offset):
-        if self.debug: print "CACHEL2 send to L1 "+tag+index+offset
-        my_block=self.data[index]
-        self.data_to_cache.send(my_block.n_data)#send whole block data
+        #Gets a reference to the corresponding index block
+        my_block = self.data[index]
 
-    def cache_write(self, tag, index, offset):
-        if self.debug: print "CACHEL2 recv from L1 "+tag+index+offset
-        my_block=self.data[index]
-        if my_block.n_state=="v": #impossible to have invalid. if modified -> no state change
-            my_block.n_state=="m"
-        my_block.n_data=self.data_from_cache.recv()#cahceL1 sent whole block data
+        #Handle miss condition
+        if tag != my_block.tag or my_block.state == "i": 
+            self.handle_miss(index, tag, offset)
+            if self.debug: print "L2 CACHE miss "+tag+index+offset
             
-    def handle_miss(self, tag, index, offset):
-        if self.debug: print "CACHEL2 miss "+tag+index+offset
-        my_block=self.data[index]
-        if my_block.n_state=="m":
-            self.flush(tag, index, offset)
-        my_block.n_data=self.fetch_from_memory(tag, index, offset)
-        my_block.n_state="v"
-        
-    
-    def fetch_from_memory(self, tag, index, offset):
-        if self.debug: print "CACHEL2 fecthing from mem "+tag+index+offset
-        ins=[tag+index+offset, "{L}"]
-        self.cmd_to_mem.send(ins)
-        return self.data_from_mem.recv()
-    
-    def flush(self, tag, index, offset): #FIXME: Check when to flush 
-        #generate a write instruction for memory
-        if self.debug: print "CACHEL2 flushing "+tag+index+offset
-        ins=[tag+index+offset, "{S}"]
-        my_block=self.data[index]
-        data=my_block.n_data
-        self.data_to_mem.send(data)
-        self.cmd_to_mem.send(ins)
+        #Execute operation as determined by command (read or write)
+        if command=="{L}":
+            self.cache_read(my_block)
+            if self.debug: print "L2 CACHE send to L1 "+tag+index+offset
+        else:
+            data = self.data_from_cache.recv()
+            self.cache_write(my_block, data)
+            if self.debug: print "L2 CACHE recv from L1 "+tag+index+offset
 
+            
+    #Function that handles a miss condition, fetching block from main memory
+    def handle_miss(self, index, tag, offset):
+        #Get local block to be overwritten
+        my_block = self.data[index]
+
+        #If my_block is Modified, first flush my_block data to main memory
+        if my_block.state == "m": self.flush(index, my_block.tag, offset, my_block.data)
+
+        #Block state transition to valid
+        my_block.state = "v"
+        #Finally copy data from main memory
+        my_block.data = self.fetch(index, tag, offset)
+        
+
+    #Function that reads requested data and sends it to L1 cache (after miss handling)
+    def cache_read(self, my_block):
+        #Send data requested by L1 cache
+        self.data_to_cache.send(my_block.data)
+
+        
+    #Function that writes requested data from L1 cache (after miss handling)
+    def cache_write(self, my_block, data):
+        #Impossible to have invalid. If modified -> no state change
+        if my_block.state == "v": my_block.state == "m"
+        #Receive whole block from L1 cache
+        my_block.data = data
+
+        
+    #Function that reads required block from main memory
+    def fetch(self, index, tag, offset):
+        if self.debug: print "L2 CACHE fetching from mem "+tag+index+offset
+        #Assemble a read request for main memory
+        mem_request = [tag+index+offset, "{L}"]
+        #Send request to main memory
+        self.cmd_to_mem.send(mem_request)
+        #Returns data received from main memory
+        return self.data_from_mem.recv()
+
+
+    #Function that writes dirty block to main memory 
+    def flush(self, index, tag, offset, data):
+        if self.debug: print "L2 CACHE flushing to mem"+tag+index+offset
+        #Assemble a write request for main memory
+        mem_request = [tag+index+offset, "{S}"]
+        #Send data to be written in main memory
+        self.data_to_mem.send(data)
+        #Send request to main memory
+        self.cmd_to_mem.send(mem_request)
+
+        
+    #Function that simulates L2 cache circuit behavior by an infinite loop
     def execution_loop(self):
         while (True):
             if not self.cmd_from_cache.poll():
                 sleep(1/1000)
             else:
-                #there is a command from cacheL1
-                instruction=self.cmd_from_cache.recv()
-                if self.data_from_cache.poll()
-                    data=self.data_from_cache.recv()
-                else:
-                    data=None
-                self.run_instruction(instruction, data) #FIXME: change implementation
+                #There is a command from L1 cache
+                self.run_instruction()
 
-def cacheL2(param_dicc, debug):
-    cache=Cache1w(128000, 32,param_dicc, debug)
+#Function to be run by L2 cache process
+def cacheL2(ports, debug):
+    #Instantiation of L2 cache module
+    cache=Cache1w(128000, 32, ports, debug)
     cache.execution_loop() 
