@@ -49,7 +49,8 @@ class Cache2w():
         self.instruction=None
 
         #Fill data dictionary with block pairs (sets)
-        for index in xrange(index_size):
+        #for index in xrange(index_size): #FIXME: Check if this is correct
+        for index in xrange(2**self.index_width):
             self.data[int2bin(index, self.index_width)]=Block_pair(Block_MESI(), Block_MESI())
 
 
