@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-from random import randint
 from utils import *
 from block import Block_MESI, Block_pair
 
@@ -22,7 +21,7 @@ from block import Block_MESI, Block_pair
 class Cache2w():
 
     #Constructor of the class Cache2w, data size in bytes, block size in bytes
-    def __init__(self, data_size, block_size,ports={}):
+    def __init__(self, data_size, block_size, ports={}, debug=False):
         #Interface ports to communicate with local core (Python Multiprocessing Pipe)
         self.cmd_from_core=ports["cmd_from_core"]
         self.data_from_core=ports["data_from_core"]
@@ -38,11 +37,11 @@ class Cache2w():
         index_size=index_size/2 #Number of sets (2 way associative)
 
         #Index width of bits in address
-        self.index_width=int(log2(index_size));
+        self.index_width=int(ceil(log2(index_size)));
 
         #Offset width of bits in address
-        self.offset_width=int(log2(block_size))
-
+        self.offset_width=int(ceil(log2(block_size)))
+        
         #Dictionary that contains the block pairs (sets)
         self.data={}
 
@@ -97,7 +96,7 @@ class Cache2w():
 
 
     #Function that handles a miss condition, fetching block from other L1 cache or L2 cache
-    def handle_miss(index, tag, block_pair):
+    def handle_miss(self, index, tag, block_pair):
         #Get local block to be overwritten by LRU policy
         my_block = block_pair.get_lru()
         #Look for block in the other L1 cache (bus)
@@ -114,6 +113,8 @@ class Cache2w():
             #If other_block is Modified, first flush other_block data to L2
             if other_flush == True: self.flush(index, other_block.tag, other_block.data)
 
+            #Update my_block tag
+            my_block.tag = tag 
             #Finally copy data from other block
             my_block.data = other_block.data 
 
@@ -123,6 +124,8 @@ class Cache2w():
             #If my_block is Modified, first flush my_block data to L2
             if my_flush == True: self.flush(index, my_block.tag, my_block.data)
 
+            #Update my_block tag
+            my_block.tag = tag
             #Finally copy data from L2 cache
             my_block.data = self.fetch(index, my_block.tag)
             
@@ -138,16 +141,16 @@ class Cache2w():
     #Function that writes requested data (one byte) (after miss handling)
     def core_write(self, my_block, index, offset, data):
         #If line is shared first try to invalidate other L1 cache line
-        if block.state == "s": 
+        if my_block.state == "s": 
             other_block = self.other.bus_search_block(index, my_block.tag)
             #In MESI state 'S', block may or may not be in other L1, so check if not None
             if other_block is not None:
                 other_block.fsm_transition("BusRdX") #Invalidate other line
 
         #Change my_block state if necessary
-        block.fsm_transition("PrWr")
-        #Write data to block
-        block.write(offset, data)
+        my_block.fsm_transition("PrWr")
+        #Write data to my_block
+        my_block.write(offset, data)
 
         
     #Function that reads required block from L2 cache
@@ -182,7 +185,7 @@ class Cache2w():
 def execution_loop(cache1, cache2, ports):
     while (True):
         if not (ports["cmd_from_core1"].poll() or ports["cmd_from_core2"].poll()):
-            sleep(1/1000)
+            sleep(1/1000.)
         else:
             #there is a command from some core
             if ports["cmd_from_core1"].poll():
@@ -194,8 +197,9 @@ def execution_loop(cache1, cache2, ports):
 
 
 #Function to be run by L1 cache process (includes both L1 caches)
-def cacheL1(ports):
+def cacheL1(ports, debug):
     #L1 Cache_1 interface pipe ports
+    ports1 = {}
     ports1["cmd_from_core"]=ports["cmd_from_core1"]
     ports1["data_from_core"]=ports["data_from_core1"]
     ports1["data_to_core"]=ports["data_to_core1"]
@@ -205,6 +209,7 @@ def cacheL1(ports):
     ports1["data_to_cache"]=ports["data_to_cache"]
     
     #L1 Cache_2 interface pipe ports
+    ports2 = {}
     ports2["cmd_from_core"]=ports["cmd_from_core2"]
     ports2["data_from_core"]=ports["data_from_core2"]
     ports2["data_to_core"]=ports["data_to_core2"]
@@ -214,8 +219,8 @@ def cacheL1(ports):
     ports2["data_to_cache"]=ports["data_to_cache"]
 
     #Instantiation of both L1 cache modules
-    cache1=Cache2w(16000, 32, ports1)
-    cache2=Cache2w(16000, 32, ports2)
+    cache1=Cache2w(16000, 32, ports1, debug)
+    cache2=Cache2w(16000, 32, ports2, debug)
     #Set other L1 cache reference for both L1 caches, not possible in the constructor
     cache1.set_cache(cache2)
     cache2.set_cache(cache1)

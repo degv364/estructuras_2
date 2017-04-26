@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-
-from random import randint
-from time import sleep
+from utils import *
 
 #Main memory class
 class Main_memory():
@@ -42,23 +40,21 @@ class Main_memory():
     #Function that simulates main memory circuit behavior by an infinite loop
     def execution_loop(self):
         while True:
-            [address, command] = cmd_from_cache.recv()
+            [address, command] = self.cmd_from_cache.recv()
             
             if command == "{L}":
-                if self.debug: print "MEM: read from "+address
-                if address in mem_data:
-                    self.data_to_cache.send(mem_data[address])
+                if self.debug: print "MEM: read from "+ bin2hex(address)
+                if address in self.mem_data:
+                    self.data_to_cache.send(self.mem_data[address])
                 else:
                     block = self.generate_block()
                     self.store_block(address, block)
                     self.data_to_cache.send(block)
             else:
-                if self.debug: print "MEM: write to "+address
+                if self.debug: print "MEM: write to "+ bin2hex(address)
                 self.store_block(address, self.data_from_cache.recv())
                     
 #Function to be run by main memory process
-def mem(ports):
+def mem(ports, debug):
     memory=Main_memory(ports, debug)
     memory.execution_loop()
-
-    

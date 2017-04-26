@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-from random import randint
 from utils import *
 from block import Block_MVI
 
@@ -38,10 +37,10 @@ class Cache1w():
         index_size=data_size/block_size;
 
         #Index width of bits in address
-        self.index_width=int(log2(index_size));
+        self.index_width=int(ceil(log2(index_size)));
 
         #Offset width of bits in address
-        self.offset_width=int(log2(block_size))
+        self.offset_width=int(ceil(log2(block_size)))
 
         #Dictionary that contains the blocks
         self.data={}
@@ -76,17 +75,20 @@ class Cache1w():
 
         #Handle miss condition
         if tag != my_block.tag or my_block.state == "i": 
+            if self.debug: print "L2 CACHE miss "+ bin2hex(tag+index+offset)
             self.handle_miss(index, tag, offset)
-            if self.debug: print "L2 CACHE miss "+tag+index+offset
+            
             
         #Execute operation as determined by command (read or write)
         if command=="{L}":
+            if self.debug: print "L2 CACHE send to L1 "+ bin2hex(tag+index+offset)
             self.cache_read(my_block)
-            if self.debug: print "L2 CACHE send to L1 "+tag+index+offset
+            
         else:
+            if self.debug: print "L2 CACHE recv from L1 "+ bin2hex(tag+index+offset)
             data = self.data_from_cache.recv()
             self.cache_write(my_block, data)
-            if self.debug: print "L2 CACHE recv from L1 "+tag+index+offset
+            
 
             
     #Function that handles a miss condition, fetching block from main memory
@@ -99,6 +101,9 @@ class Cache1w():
 
         #Block state transition to valid
         my_block.state = "v"
+
+        #Update my_block tag
+        my_block.tag = tag 
         #Finally copy data from main memory
         my_block.data = self.fetch(index, tag, offset)
         
@@ -119,7 +124,7 @@ class Cache1w():
         
     #Function that reads required block from main memory
     def fetch(self, index, tag, offset):
-        if self.debug: print "L2 CACHE fetching from mem "+tag+index+offset
+        if self.debug: print "L2 CACHE fetching from mem "+ bin2hex(tag+index+offset)
         #Assemble a read request for main memory
         mem_request = [tag+index+offset, "{L}"]
         #Send request to main memory
@@ -130,7 +135,7 @@ class Cache1w():
 
     #Function that writes dirty block to main memory 
     def flush(self, index, tag, offset, data):
-        if self.debug: print "L2 CACHE flushing to mem"+tag+index+offset
+        if self.debug: print "L2 CACHE flushing to mem"+ bin2hex(tag+index+offset)
         #Assemble a write request for main memory
         mem_request = [tag+index+offset, "{S}"]
         #Send data to be written in main memory
@@ -143,7 +148,7 @@ class Cache1w():
     def execution_loop(self):
         while (True):
             if not self.cmd_from_cache.poll():
-                sleep(1/1000)
+                sleep(1/1000.)
             else:
                 #There is a command from L1 cache
                 self.run_instruction()

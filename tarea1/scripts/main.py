@@ -17,7 +17,7 @@
 
 
 from multiprocessing import Pipe, Process
-from parser import get_adresses
+from parser import get_addresses
 from core import core
 from cacheL1 import cacheL1
 from cacheL2 import cacheL2
@@ -26,9 +26,16 @@ from utils import *
 
 
 def main():
+    #Debug flag
+    debug = True
+
     #Get the instructions from files
     instructions_list_core_1=get_addresses("mem_trace_core1.txt")
     instructions_list_core_2=get_addresses("mem_trace_core2.txt")
+
+    #Test files
+    #instructions_list_core_1=get_addresses("test1.txt")
+    #instructions_list_core_2=get_addresses("test2.txt")
     
     #Create the pipe connections (ports)
 
@@ -67,7 +74,7 @@ def main():
                       "cmd_to_cache1":cmd_core1_to_cache1,
                       "data_from_cache1":data_core1_from_cache1,
                       "data_to_cache1":  data_core1_to_cache1,
-                      "instructions_core2":instructions_list_core_1,
+                      "instructions_core2":instructions_list_core_2,
                       "cmd_to_cache2": cmd_core2_to_cache2,
                       "data_from_cache2": data_core2_from_cache2,
                       "data_to_cache2":  data_core2_to_cache2} 
