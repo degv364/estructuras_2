@@ -27,7 +27,7 @@ def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
                 print "\n--------------------------------------------"
                 print "CORE1 read "+ bin2hex(address)
 
-                cmd_to_cache.send(instruction)
+            cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
         else:
             if debug:
@@ -63,6 +63,7 @@ def core(param_dicc, debug):
     sleep(0.5) #Wait for the rest to initialize
 
     while counter_core1 < len(ins_list_core1) or counter_core2 < len(ins_list_core2):
+        
         if counter_core1 < len(ins_list_core1):
             #Execute 3 instructions
             execute_3(ins_list_core1, cmd_to_cache1, data_to_cache1,
