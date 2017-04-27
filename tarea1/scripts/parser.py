@@ -26,11 +26,12 @@ def get_addresses(filename):
     del content[-1]
     
     for line in content:
-        [address, action]=line.split()
-        address=hex2bin(address.split('x')[1])
-        while len(address)<6:
-            address="0"+address
-        addresses.append([address, "{"+action+"}"])
+        if line[0]!='#': #to be able to add coments in instructions files
+            [address, action]=line.split()
+            address=hex2bin(address.split('x')[1])
+            while len(address)<6:
+                address="0"+address
+            addresses.append([address, "{"+action+"}"])
     f.close()
     return addresses
 

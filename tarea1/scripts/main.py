@@ -33,6 +33,7 @@ def main():
     instructions_list_core_1=get_addresses("mem_trace_core1.txt")
     instructions_list_core_2=get_addresses("mem_trace_core2.txt")
 
+
     #Test files
     #instructions_list_core_1=get_addresses("test1.txt")
     #instructions_list_core_2=get_addresses("test2.txt")
