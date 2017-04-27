@@ -49,8 +49,7 @@ class Cache2w():
         self.instruction=None
 
         #Fill data dictionary with block pairs (sets)
-        #for index in xrange(index_size): #FIXME: Check if this is correct
-        for index in xrange(2**self.index_width):
+        for index in xrange(index_size):
             self.data[int2bin(index, self.index_width)]=Block_pair(Block_MESI(), Block_MESI())
 
 
@@ -220,8 +219,8 @@ def cacheL1(ports, debug):
     ports2["data_to_cache"]=ports["data_to_cache"]
 
     #Instantiation of both L1 cache modules
-    cache1=Cache2w(16000, 32, ports1, debug)
-    cache2=Cache2w(16000, 32, ports2, debug)
+    cache1=Cache2w(16*1024, 32, ports1, debug)
+    cache2=Cache2w(16*1024, 32, ports2, debug)
     #Set other L1 cache reference for both L1 caches, not possible in the constructor
     cache1.set_cache(cache2)
     cache2.set_cache(cache1)

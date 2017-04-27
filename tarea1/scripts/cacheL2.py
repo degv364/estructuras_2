@@ -49,8 +49,7 @@ class Cache1w():
         self.instruction=None
 
         #Fill data dictionary with blocks
-        #for index in xrange(index_size): #FIXME: Check if this is correct
-        for index in xrange(2**self.index_width):
+        for index in xrange(index_size):
             self.data[int2bin(index, self.index_width)]=Block_MVI()
 
 
@@ -157,5 +156,5 @@ class Cache1w():
 #Function to be run by L2 cache process
 def cacheL2(ports, debug):
     #Instantiation of L2 cache module
-    cache=Cache1w(128000, 32, ports, debug)
+    cache=Cache1w(128*1024, 32, ports, debug)
     cache.execution_loop() 
