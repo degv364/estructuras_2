@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
-
+import sys, getopt
 
 from multiprocessing import Pipe, Process
 from parser import get_addresses
@@ -24,14 +24,27 @@ from cacheL2 import cacheL2
 from mem import mem
 from utils import *
 
+def option_parser(argv):
+    core1_file="mem_trace_core1.txt"
+    core2_file="mem_trace_core2.txt"
+    debug=False
 
-def main():
-    #Debug flag
-    debug = True
+    if len(argv)==2:
+        if argv[1]=="debug": debug=True
+    if len(argv)>2:
+        core1_file=argv[1]
+        core2_file=argv[2]
+    if len(argv)>3:
+        if argv[3]=="debug": debug=True
+    
+    return [debug, core1_file, core2_file]
 
+def main(argv):
+    [debug, core1_file, core2_file]=option_parser(argv)
+    
     #Get the instructions from files
-    instructions_list_core_1=get_addresses("mem_trace_core1.txt")
-    instructions_list_core_2=get_addresses("mem_trace_core2.txt")
+    instructions_list_core_1=get_addresses(core1_file)
+    instructions_list_core_2=get_addresses(core2_file)
 
 
     #Test files
@@ -121,5 +134,5 @@ def main():
 
 
 if __name__=="__main__":
-    main()
+    main(sys.argv)
 
