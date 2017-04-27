@@ -21,7 +21,7 @@ from block import Block_MESI, Block_pair
 class Cache2w():
 
     #Constructor of the class Cache2w, data size in bytes, block size in bytes
-    def __init__(self, data_size, block_size, ports={}, debug=False):
+    def __init__(self, data_size, block_size, ports={}, debug=False, iden=None):
         #Interface ports to communicate with local core (Python Multiprocessing Pipe)
         self.cmd_from_core=ports["cmd_from_core"]
         self.data_from_core=ports["data_from_core"]
@@ -51,6 +51,10 @@ class Cache2w():
         #Fill data dictionary with block pairs (sets)
         for index in xrange(index_size):
             self.data[int2bin(index, self.index_width)]=Block_pair(Block_MESI(), Block_MESI())
+
+        #Debug flags
+        self.debug = debug
+        self.iden=iden #identity for debug messages
 
 
     #Function that sets a reference to the other L1 cache in the bus (only two L1 caches)
@@ -83,14 +87,18 @@ class Cache2w():
 
         #Handle miss condition
         if my_block == None:
+            if self.debug:
+                print "L1 CACHE"+self.iden+" miss "+bin2hex(tag+index+offset)
             self.handle_miss(index, tag, my_block_pair)
             #Fetch block again, now that it is there
             my_block = my_block_pair.get_by_tag(tag) 
             
         #Execute operation as determined by command (read or write)
-        if command=="{L}": 
+        if command=="{L}":
+            if self.debug: print "L1 CACHE"+self.iden+" send to core "+ bin2hex(tag+index+offset)
             self.core_read(my_block, offset)
         else:
+            if self.debug: print "L1 CACHE"+self.iden+" recv from core "+bin2hex(tag+index+offset)
             data = self.data_from_core.recv()
             self.core_write(my_block, index, offset, data)
 
@@ -103,6 +111,8 @@ class Cache2w():
         other_block = self.other.bus_search_block(index, tag) 
         
         if other_block is not None: #Block found in other L1
+            if self.debug:
+                print "L1 CACHE"+self.iden+" block in other cache "
             #Change my_block state if necessary
             my_flush = my_block.fsm_transition("Miss", True) 
             #If my_block is Modified, first flush my_block data to L2
@@ -132,6 +142,7 @@ class Cache2w():
 
     #Function that reads requested data (one byte) and sends it to core (after miss handling)
     def core_read(self, my_block, offset):
+        
         data = my_block.read(offset) #Get requested byte from block
         my_block.fsm_transition("PrRd")
         #Using pipe port to give data to core
@@ -155,6 +166,8 @@ class Cache2w():
         
     #Function that reads required block from L2 cache
     def fetch(self, index, tag):
+        if self.debug:
+            print "L1 CACHE"+self.iden+" fetching from L2 "+bin2hex(tag+index+("0"*self.offset_width))
         #Assemble a read request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{L}"] 
         #Send request to L2 cache
@@ -165,6 +178,7 @@ class Cache2w():
     
     #Function that writes dirty block to L2 cache 
     def flush(self, index, tag, data):
+        if self.debug: print "L1 CACHE"+self.iden+" flushing to L2 "+bin2hex(tag+index+("0"*self.offset_width))
         #Assemble a write request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{S}"]
         #Send data to be written in L2 cache
@@ -219,8 +233,8 @@ def cacheL1(ports, debug):
     ports2["data_to_cache"]=ports["data_to_cache"]
 
     #Instantiation of both L1 cache modules
-    cache1=Cache2w(16*1024, 32, ports1, debug)
-    cache2=Cache2w(16*1024, 32, ports2, debug)
+    cache1=Cache2w(16*1024, 32, ports1, debug, iden="1")
+    cache2=Cache2w(16*1024, 32, ports2, debug, iden="2")
     #Set other L1 cache reference for both L1 caches, not possible in the constructor
     cache1.set_cache(cache2)
     cache2.set_cache(cache1)

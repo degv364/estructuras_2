@@ -37,6 +37,7 @@ def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
             data_to_cache.send(randint(0,255))
             cmd_to_cache.send(instruction)
         count+=1
+        sleep(1/100.)
         
 
 def core(param_dicc, debug):
