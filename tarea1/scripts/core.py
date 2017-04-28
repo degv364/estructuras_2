@@ -26,17 +26,18 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         if command == "{L}":
             if debug:
                 print "\n-------------------------------------------------------------"
-                print "CORE("+identity+"): Read address ["+ bin2hex(address)+"]"
+                print "CORE("+str(identity)+"): Read address ["+ bin2hex(address)+"]"
 
             cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
-            if debug: print "CORE("+identity+"): Read value (byte) from L1 Cache("+identity+"): " + str(data)
+            if debug: print "CORE("+str(identity)+"): Read value (byte) from L1 CACHE("+str(identity)+"): " + str(data)
         else:
+            data = randint(0,255)
             if debug:
                 print "\n-------------------------------------------------------------"
-                print "CORE("+identity+"): Write address ["+ bin2hex(address)+"]"
+                print "CORE("+str(identity)+"): Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
 
-            data_to_cache.send(randint(0,255))
+            data_to_cache.send(data)
             cmd_to_cache.send(instruction)
         count+=1
         sleep(1/100.)

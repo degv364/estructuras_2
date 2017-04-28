@@ -98,10 +98,10 @@ class Cache2w():
 
         #Execute operation as determined by command (read or write)
         if command=="{L}":
-            if self.debug: print "L1 CACHE("+self.iden+"): Send Data ["+ bin2hex(tag+index+offset)+"] to Core("+self.iden+")"
+            if self.debug: print "L1 CACHE("+self.iden+"): Send Data ["+ bin2hex(tag+index+offset)+"] to CORE("+self.iden+")"
             self.core_read(my_block, offset)
         else:
-            if self.debug: print "L1 CACHE("+self.iden+"): Receive Data ["+bin2hex(tag+index+offset)+"] from Core("+self.iden+")"
+            if self.debug: print "L1 CACHE("+self.iden+"): Receive Data ["+bin2hex(tag+index+offset)+"] from CORE("+self.iden+")"
             data = self.data_from_core.recv()
             self.core_write(my_block, index, offset, data)
 
@@ -114,7 +114,7 @@ class Cache2w():
         other_block = self.other.bus_search_block(index, tag) 
         
         if other_block is not None: #Block found in other L1
-            if self.debug: print "L1 CACHE("+self.iden+"): Missing Block found in other L1 Cache (Bus)"
+            if self.debug: print "L1 CACHE("+self.iden+"): Missing Block found in L1 CACHE("+self.other.iden+") (Bus)"
             #Change my_block state if necessary
             my_flush = my_block.fsm_transition("Miss", True) 
             #If my_block is Modified, first flush my_block data to L2
@@ -144,10 +144,8 @@ class Cache2w():
 
     #Function that reads requested data (one byte) and sends it to core (after miss handling)
     def core_read(self, my_block, offset):
-        
-        data = my_block.read(offset) #Get requested byte from block
-
-        if self.debug: print "Read value (byte) = " + str(data)
+        #Get requested byte from block
+        data = my_block.read(offset) 
         
         my_block.fsm_transition("PrRd")
         #Using pipe port to give data to core
@@ -163,7 +161,7 @@ class Cache2w():
             if other_block is not None:
                 other_block.fsm_transition("BusRdX") #Invalidate other line
 
-        if self.debug: print "L1 CACHE("+self.iden+"): Write value (byte) from Core("+self.iden+"): " + str(data)
+        if self.debug: print "L1 CACHE("+self.iden+"): Write value (byte) from CORE("+self.iden+"): " + str(data)
                 
         #Change my_block state if necessary
         my_block.fsm_transition("PrWr")
@@ -175,7 +173,7 @@ class Cache2w():
     #Function that reads required block from L2 cache
     def fetch(self, index, tag):
         if self.debug:
-            print "L1 CACHE("+self.iden+"): Fetch Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] from L2 Cache"
+            print "L1 CACHE("+self.iden+"): Fetch Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] from L2 CACHE"
         #Assemble a read request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{L}"] 
         #Send request to L2 cache
@@ -186,7 +184,7 @@ class Cache2w():
     
     #Function that writes dirty block to L2 cache 
     def flush(self, index, tag, data):
-        if self.debug: print "L1 CACHE("+self.iden+"): Flush Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] to L2 Cache"
+        if self.debug: print "L1 CACHE("+self.iden+"): Flush Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] to L2 CACHE"
         #Assemble a write request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{S}"]
         #Send data to be written in L2 cache
