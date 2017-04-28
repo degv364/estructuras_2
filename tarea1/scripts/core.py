@@ -16,10 +16,10 @@
 
 from utils import *
 
-def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
-              data_from_cache=None, counter_core=0, debug=False):
+def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
+              data_from_cache=None, counter_core=0, debug=False, limit=3):
     count = 0
-    while counter_core+count < len(ins_list_core) and count < 3:
+    while counter_core+count < len(ins_list_core) and count < limit:
         instruction = ins_list_core[counter_core+count]
         [address, command] = instruction
         if command == "{L}":
@@ -40,7 +40,7 @@ def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         sleep(1/100.)
         
 
-def core(param_dicc, debug):
+def core(param_dicc=None, debug=False, ratio=3):
     #Lists of instructions for both cores
     ins_list_core1=param_dicc["instructions_core1"]
     ins_list_core2=param_dicc["instructions_core2"]
@@ -66,9 +66,9 @@ def core(param_dicc, debug):
         
         if counter_core1 < len(ins_list_core1):
             #Execute 3 instructions
-            execute_3(ins_list_core1, cmd_to_cache1, data_to_cache1,
-                      data_from_cache1, counter_core1, debug)
-            counter_core1 += 3
+            execute_n(ins_list_core1, cmd_to_cache1, data_to_cache1,
+                      data_from_cache1, counter_core1, debug, ratio)
+            counter_core1 += ratio
         if counter_core2 < len(ins_list_core2):
             #Execute 1 instruction
             instruction = ins_list_core2[counter_core2]

@@ -115,7 +115,7 @@ def main(argv):
                     "data_to_cache": data_mem_to_cache}
 
     #Create the processes
-    core_p = Process(target=core, args=(core_parameters, debug))
+    core_p = Process(target=core, args=(core_parameters, debug, 3))#3 ratio instructions core a to core 2
     cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug))
     cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug))
     mem_p = Process(target=mem, args=(mem_parameters, debug))
