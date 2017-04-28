@@ -17,7 +17,8 @@
 from utils import *
 
 def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
-              data_from_cache=None, counter_core=0, debug=False, limit=3):
+              data_from_cache=None, counter_core=0, debug=False, limit=3,
+              identity=0):
     count = 0
     while counter_core+count < len(ins_list_core) and count < limit:
         instruction = ins_list_core[counter_core+count]
@@ -25,14 +26,14 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         if command == "{L}":
             if debug:
                 print "\n--------------------------------------------"
-                print "CORE1 read "+ bin2hex(address)
+                print "CORE"+identity+" read "+ bin2hex(address)
 
             cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
         else:
             if debug:
                 print "\n--------------------------------------------"
-                print "CORE1 write "+ bin2hex(address)
+                print "CORE"+identity+" write "+ bin2hex(address)
 
             data_to_cache.send(randint(0,255))
             cmd_to_cache.send(instruction)
@@ -40,7 +41,7 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         sleep(1/100.)
         
 
-def core(param_dicc=None, debug=False, ratio=3):
+def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1):
     #Lists of instructions for both cores
     ins_list_core1=param_dicc["instructions_core1"]
     ins_list_core2=param_dicc["instructions_core2"]
@@ -67,25 +68,15 @@ def core(param_dicc=None, debug=False, ratio=3):
         if counter_core1 < len(ins_list_core1):
             #Execute 3 instructions
             execute_n(ins_list_core1, cmd_to_cache1, data_to_cache1,
-                      data_from_cache1, counter_core1, debug, ratio)
-            counter_core1 += ratio
+                      data_from_cache1, counter_core1, debug, core1_sprint,
+                      identity="1")
+            counter_core1 += core1_sprint
         if counter_core2 < len(ins_list_core2):
             #Execute 1 instruction
-            instruction = ins_list_core2[counter_core2]
-            [address, command] = instruction
-            if command == "{L}":
-                if debug:
-                    print "\n--------------------------------------------"
-                    print "CORE2 read "+ bin2hex(address)
-                cmd_to_cache2.send(instruction)
-                data=data_from_cache2.recv()
-            else:
-                if debug:
-                    print "\n--------------------------------------------"
-                    print "CORE2 write "+ bin2hex(address)
-                data_to_cache2.send(randint(0,255))
-                cmd_to_cache2.send(instruction)
-            counter_core2 += 1
+            execute_n(ins_list_core2, cmd_to_cache2, data_to_cache2,
+                      data_from_cache2, counter_core2, debug, core2_sprint,
+                      identity="2")
+            counter_core2 += core2_sprint
         sleep(1/100.)
                 
     print "finished execution..."
