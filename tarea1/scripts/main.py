@@ -16,7 +16,7 @@
 
 import sys, getopt
 
-from multiprocessing import Pipe, Process
+from multiprocessing import Pipe, Process, Queue
 from parser import get_addresses
 from core import core
 from cacheL1 import cacheL1
@@ -30,7 +30,8 @@ def option_parser(argv):
     debug=False
     core1_sprint=3
     core2_sprint=1
-
+    output_file = None
+    
     if "--debug" in argv:
         debug=True
 
@@ -43,13 +44,28 @@ def option_parser(argv):
             core1_file=argument.split("=")[1]
         if "--core2_file=" in argument:
             core2_file=argument.split("=")[1]
-    
-    return [debug, core1_file, core2_file, core1_sprint, core2_sprint]
+        if "--output_file=" in argument:
+            output_file =argument.split("=")[1]
+            
+    return [debug, core1_file, core2_file, core1_sprint, core2_sprint, output_file]
 
+
+def print_fn(filename, print_queue):
+    if filename is not None:
+        file_handle = open(filename, "w")
+    while True:
+        try:
+            msg = print_queue.get(block = False)
+            if filename is not None:
+                print >>file_handle, msg
+            else:
+                print msg
+        except:
+            break
 
 
 def main(argv):
-    [debug, core1_file, core2_file, core1_sprint, core2_sprint]=option_parser(argv)
+    [debug, core1_file, core2_file, core1_sprint,core2_sprint, output_file]=option_parser(argv)
     
     #Get the instructions from files
     instructions_list_core_1=get_addresses(core1_file)
@@ -119,14 +135,19 @@ def main(argv):
                     "data_from_cache": data_mem_from_cache,
                     "data_to_cache": data_mem_to_cache}
 
+    #Print communication queue
+    print_queue = Queue()
+    
     #Create the processes
+    print_p = Process(target=print_fn, args=(output_file, print_queue))
     core_p = Process(target=core, args=(core_parameters, debug,
-                                        core1_sprint, core2_sprint)) #Instructions ratio core1:core2
-    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug))
-    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug))
-    mem_p = Process(target=mem, args=(mem_parameters, debug))
+                                        core1_sprint, core2_sprint, print_queue)) #Instructions ratio core1:core2
+    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue))
+    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue))
+    mem_p = Process(target=mem, args=(mem_parameters, debug, print_queue))
 
     #Process management
+    print_p.start()
     core_p.start()
     cacheL1_p.start()
     cacheL2_p.start()
@@ -134,6 +155,7 @@ def main(argv):
     
     core_p.join()
     
+    print_p.terminate()
     cacheL1_p.terminate()
     cacheL2_p.terminate()
     mem_p.terminate()
@@ -141,4 +163,3 @@ def main(argv):
 
 if __name__=="__main__":
     main(sys.argv)
-
