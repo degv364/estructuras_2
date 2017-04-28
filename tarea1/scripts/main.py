@@ -39,6 +39,8 @@ def option_parser(argv):
     
     return [debug, core1_file, core2_file]
 
+
+
 def main(argv):
     [debug, core1_file, core2_file]=option_parser(argv)
     
@@ -46,10 +48,6 @@ def main(argv):
     instructions_list_core_1=get_addresses(core1_file)
     instructions_list_core_2=get_addresses(core2_file)
 
-
-    #Test files
-    #instructions_list_core_1=get_addresses("test1.txt")
-    #instructions_list_core_2=get_addresses("test2.txt")
     
     #Create the pipe connections (ports)
 
@@ -115,7 +113,7 @@ def main(argv):
                     "data_to_cache": data_mem_to_cache}
 
     #Create the processes
-    core_p = Process(target=core, args=(core_parameters, debug, 3))#3 ratio instructions core a to core 2
+    core_p = Process(target=core, args=(core_parameters, debug, 3)) #3:1 instructions ratio (core 1 to core 2)
     cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug))
     cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug))
     mem_p = Process(target=mem, args=(mem_parameters, debug))

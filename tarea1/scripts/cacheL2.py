@@ -73,19 +73,21 @@ class Cache1w():
         #Gets a reference to the corresponding index block
         my_block = self.data[index]
 
+        miss_flag = tag != my_block.tag or my_block.state == "i"
         #Handle miss condition
-        if tag != my_block.tag or my_block.state == "i": 
-            if self.debug: print "L2 CACHE miss "+ bin2hex(tag+index+offset)
+        if miss_flag: 
+            if self.debug: print "L2 CACHE: MISS for Block ["+ bin2hex(tag+index+offset)+"]"
             self.handle_miss(index, tag, offset)
-            
+
+        if self.debug and not miss_flag: print "L2 CACHE: HIT for Block ["+ bin2hex(tag+index+offset)+"]"
             
         #Execute operation as determined by command (read or write)
         if command=="{L}":
-            if self.debug: print "L2 CACHE send to L1 "+ bin2hex(tag+index+offset)
+            if self.debug: print "L2 CACHE: Send Block ["+ bin2hex(tag+index+offset)+"] to L1 Cache"
             self.cache_read(my_block)
             
         else:
-            if self.debug: print "L2 CACHE recv from L1 "+ bin2hex(tag+index+offset)
+            if self.debug: print "L2 CACHE: Receive Block ["+ bin2hex(tag+index+offset)+"] from L1 Cache"
             data = self.data_from_cache.recv()
             self.cache_write(my_block, data)
             
@@ -124,7 +126,7 @@ class Cache1w():
         
     #Function that reads required block from main memory
     def fetch(self, index, tag, offset):
-        if self.debug: print "L2 CACHE fetching from mem "+ bin2hex(tag+index+offset)
+        if self.debug: print "L2 CACHE: Fetch Block ["+bin2hex(tag+index+offset)+"] from Main Memory"
         #Assemble a read request for main memory
         mem_request = [tag+index+offset, "{L}"]
         #Send request to main memory
@@ -135,7 +137,7 @@ class Cache1w():
 
     #Function that writes dirty block to main memory 
     def flush(self, index, tag, offset, data):
-        if self.debug: print "L2 CACHE flushing to mem"+ bin2hex(tag+index+offset)
+        if self.debug: print "L2 CACHE: Flush Block ["+bin2hex(tag+index+offset)+"] to Main Memory"
         #Assemble a write request for main memory
         mem_request = [tag+index+offset, "{S}"]
         #Send data to be written in main memory

@@ -24,15 +24,16 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         [address, command] = instruction
         if command == "{L}":
             if debug:
-                print "\n--------------------------------------------"
-                print "CORE1 read "+ bin2hex(address)
+                print "\n-------------------------------------------------------------"
+                print "CORE: Read address ["+ bin2hex(address)+"]"
 
             cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
+            
         else:
             if debug:
-                print "\n--------------------------------------------"
-                print "CORE1 write "+ bin2hex(address)
+                print "\n-------------------------------------------------------------"
+                print "CORE: Write address ["+ bin2hex(address)+"]"
 
             data_to_cache.send(randint(0,255))
             cmd_to_cache.send(instruction)
@@ -75,13 +76,13 @@ def core(param_dicc=None, debug=False, ratio=3):
             [address, command] = instruction
             if command == "{L}":
                 if debug:
-                    print "\n--------------------------------------------"
+                    print "\n-------------------------------------------------------------"
                     print "CORE2 read "+ bin2hex(address)
                 cmd_to_cache2.send(instruction)
                 data=data_from_cache2.recv()
             else:
                 if debug:
-                    print "\n--------------------------------------------"
+                    print "\n-------------------------------------------------------------"
                     print "CORE2 write "+ bin2hex(address)
                 data_to_cache2.send(randint(0,255))
                 cmd_to_cache2.send(instruction)

@@ -85,20 +85,23 @@ class Cache2w():
         #If my_block is None indicates a miss, else it means the block was found by tag
         my_block = my_block_pair.get_by_tag(tag) 
 
+        miss_flag = my_block == None
+        
         #Handle miss condition
-        if my_block == None:
-            if self.debug:
-                print "L1 CACHE"+self.iden+" miss "+bin2hex(tag+index+offset)
+        if miss_flag:
+            if self.debug: print "L1 CACHE("+self.iden+"): MISS for address ["+ bin2hex(tag+index+offset)+"]"
             self.handle_miss(index, tag, my_block_pair)
             #Fetch block again, now that it is there
             my_block = my_block_pair.get_by_tag(tag) 
             
+        if self.debug and not miss_flag: print "L1 CACHE("+self.iden+"): HIT for address ["+ bin2hex(tag+index+offset)+"]"
+
         #Execute operation as determined by command (read or write)
         if command=="{L}":
-            if self.debug: print "L1 CACHE"+self.iden+" send to core "+ bin2hex(tag+index+offset)
+            if self.debug: print "L1 CACHE("+self.iden+"): Send Data ["+ bin2hex(tag+index+offset)+"] to Core("+self.iden+")"
             self.core_read(my_block, offset)
         else:
-            if self.debug: print "L1 CACHE"+self.iden+" recv from core "+bin2hex(tag+index+offset)
+            if self.debug: print "L1 CACHE("+self.iden+"): Receive Data ["+bin2hex(tag+index+offset)+"] from Core("+self.iden+")"
             data = self.data_from_core.recv()
             self.core_write(my_block, index, offset, data)
 
@@ -111,8 +114,7 @@ class Cache2w():
         other_block = self.other.bus_search_block(index, tag) 
         
         if other_block is not None: #Block found in other L1
-            if self.debug:
-                print "L1 CACHE"+self.iden+" block in other cache "
+            if self.debug: print "L1 CACHE("+self.iden+"): Missing Block found in other L1 Cache (Bus)"
             #Change my_block state if necessary
             my_flush = my_block.fsm_transition("Miss", True) 
             #If my_block is Modified, first flush my_block data to L2
@@ -144,6 +146,9 @@ class Cache2w():
     def core_read(self, my_block, offset):
         
         data = my_block.read(offset) #Get requested byte from block
+
+        if self.debug: print "Read value (byte) = " + str(data)
+        
         my_block.fsm_transition("PrRd")
         #Using pipe port to give data to core
         self.data_to_core.send(data)
@@ -158,8 +163,11 @@ class Cache2w():
             if other_block is not None:
                 other_block.fsm_transition("BusRdX") #Invalidate other line
 
+        if self.debug: print "L1 CACHE("+self.iden+"): Write value (byte) from Core("+self.iden+"): " + str(data)
+                
         #Change my_block state if necessary
         my_block.fsm_transition("PrWr")
+        
         #Write data to my_block
         my_block.write(offset, data)
 
@@ -167,7 +175,7 @@ class Cache2w():
     #Function that reads required block from L2 cache
     def fetch(self, index, tag):
         if self.debug:
-            print "L1 CACHE"+self.iden+" fetching from L2 "+bin2hex(tag+index+("0"*self.offset_width))
+            print "L1 CACHE("+self.iden+"): Fetch Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] from L2 Cache"
         #Assemble a read request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{L}"] 
         #Send request to L2 cache
@@ -178,7 +186,7 @@ class Cache2w():
     
     #Function that writes dirty block to L2 cache 
     def flush(self, index, tag, data):
-        if self.debug: print "L1 CACHE"+self.iden+" flushing to L2 "+bin2hex(tag+index+("0"*self.offset_width))
+        if self.debug: print "L1 CACHE("+self.iden+"): Flush Block ["+bin2hex(tag+index+("0"*self.offset_width))+"] to L2 Cache"
         #Assemble a write request for L2 cache
         cache_request = [tag+index+("0"*self.offset_width), "{S}"]
         #Send data to be written in L2 cache
@@ -189,6 +197,7 @@ class Cache2w():
 
     #Function used by other L1 cache to search a block
     def bus_search_block(self, index, tag):
+        if self.debug: print "L1 CACHE("+self.iden+"): Bus Request: Seach for Block ["+bin2hex(tag+index+("0"*self.offset_width))+"]"
         block_pair = self.data[index]
         #False makes get request not affect LRU counters (bus read)
         my_block = block_pair.get_by_tag(tag, False)
