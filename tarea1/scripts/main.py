@@ -28,21 +28,28 @@ def option_parser(argv):
     core1_file="mem_trace_core1.txt"
     core2_file="mem_trace_core2.txt"
     debug=False
+    core1_sprint=3
+    core2_sprint=1
 
-    if len(argv)==2:
-        if argv[1]=="debug": debug=True
-    if len(argv)>2:
-        core1_file=argv[1]
-        core2_file=argv[2]
-    if len(argv)>3:
-        if argv[3]=="debug": debug=True
+    if "--debug" in argv:
+        debug=True
+
+    for argument in argv:
+        if "--ratio=" in argument:
+            cores_sprints=argument.split("=")[1]
+            core1_sprint=int(cores_sprints.split(":")[0])
+            core2_sprint=int(cores_sprints.split(":")[1])
+        if "--core1_file=" in argument:
+            core1_file=argument.split("=")[1]
+        if "--core2_file=" in argument:
+            core2_file=argument.split("=")[1]
     
-    return [debug, core1_file, core2_file]
+    return [debug, core1_file, core2_file, core1_sprint, core2_sprint]
 
 
 
 def main(argv):
-    [debug, core1_file, core2_file]=option_parser(argv)
+    [debug, core1_file, core2_file, core1_sprint, core2_sprint]=option_parser(argv)
     
     #Get the instructions from files
     instructions_list_core_1=get_addresses(core1_file)
@@ -113,7 +120,8 @@ def main(argv):
                     "data_to_cache": data_mem_to_cache}
 
     #Create the processes
-    core_p = Process(target=core, args=(core_parameters, debug, 3)) #3:1 instructions ratio (core 1 to core 2)
+    core_p = Process(target=core, args=(core_parameters, debug,
+                                        core1_sprint, core2_sprint)) #Instructions ratio core1:core2
     cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug))
     cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug))
     mem_p = Process(target=mem, args=(mem_parameters, debug))
