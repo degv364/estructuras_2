@@ -21,7 +21,7 @@ class Block_MVI():
         self.state = n_state #Three possible values: m (modified), v (valid), i (invalid) 
         self.tag = n_tag
         self.data = n_data  #Data is a list of bytes
-
+        
     #Function that invalidates block
     def invalidate(self):
         self.state="i"
@@ -29,10 +29,11 @@ class Block_MVI():
 #MESI protocol block class
 class Block_MESI():
     #Constructor of the class Block_MESI
-    def __init__(self, n_state="i", n_tag=None, n_data=[]):
+    def __init__(self, n_state="i", n_tag=None, n_data=[], n_setid=None):
         self.state = n_state
         self.tag = n_tag
         self.data = n_data  #Data is a list with every byte
+        self.setid = n_setid
 
         
     #Function that reads a single byte from block as determined by offset
@@ -46,19 +47,22 @@ class Block_MESI():
 
         
     #Function in charge of handling FSM transition of block
-    def fsm_transition(self, request, shared_flag = None): #Shared flag is used in miss cases
+    def fsm_transition(self, request, shared_flag = False): #Shared flag is used in miss cases
         flush = False #This flag indicates if a flush is required
+        initial_state = self.state
+
         #Cases for block state
         if self.state == "m": flush = self._fsm_m(request, shared_flag)
         elif self.state == "e": self._fsm_e(request, shared_flag)
         elif self.state == "s": self._fsm_s(request, shared_flag)
         elif self.state == "i": self._fsm_i(request, shared_flag)
+    
         return flush
 
     
     #Function that defines the FSM transition for 'm' case
     def _fsm_m(self, request, shared_flag):
-        flush = False
+        flush = False        
         if request == "Miss":
             if shared_flag:
                 self.state = "s"
@@ -74,6 +78,7 @@ class Block_MESI():
             flush = True
         elif request == "BusRdX":
             self.invalidate()
+            
         return flush  #Asserts a flush if required
 
     #Function that defines the FSM transition for 'e' case

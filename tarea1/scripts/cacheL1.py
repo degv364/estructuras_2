@@ -50,7 +50,8 @@ class Cache2w():
 
         #Fill data dictionary with block pairs (sets)
         for index in xrange(index_size):
-            self.data[int2bin(index, self.index_width)]=Block_pair(Block_MESI(), Block_MESI())
+            self.data[int2bin(index, self.index_width)]=Block_pair(Block_MESI(n_setid = 1),
+                                                                   Block_MESI(n_setid = 2))
 
         #Debug flags
         self.debug = debug
@@ -99,7 +100,7 @@ class Cache2w():
         #Execute operation as determined by command (read or write)
         if command=="{L}":
             if self.debug: print "L1 CACHE("+self.iden+"): Send Data ["+ bin2hex(tag+index+offset)+"] to CORE("+self.iden+")"
-            self.core_read(my_block, offset)
+            self.core_read(my_block, index, offset)
         else:
             if self.debug: print "L1 CACHE("+self.iden+"): Receive Data ["+bin2hex(tag+index+offset)+"] from CORE("+self.iden+")"
             data = self.data_from_core.recv()
@@ -114,14 +115,24 @@ class Cache2w():
         other_block = self.other.bus_search_block(index, tag) 
         
         if other_block is not None: #Block found in other L1
-            if self.debug: print "L1 CACHE("+self.iden+"): Missing Block found in L1 CACHE("+self.other.iden+") (Bus)"
+            if self.debug: print "L1 CACHE("+self.iden+"): Bus Reply: Missing Block found in L1 CACHE("+self.other.iden+")"
             #Change my_block state if necessary
-            my_flush = my_block.fsm_transition("Miss", True) 
+            my_request = "Miss"
+            my_initial = my_block.state
+            my_flush = my_block.fsm_transition(my_request, True) 
+            my_final = my_block.state
+            self.debug_fsm_transition(my_request, my_block.setid, int(index,2), my_initial, my_final, my_flush)
+            
             #If my_block is Modified, first flush my_block data to L2
             if my_flush == True: self.flush(index, my_block.tag, my_block.data)
 
             #Change other_block state if necessary (BusRd signal)
-            other_flush = other_block.fsm_transition("BusRd")
+            other_request = "BusRd"
+            other_initial = other_block.state
+            other_flush = other_block.fsm_transition(other_request)
+            other_final = other_block.state
+            self.other.debug_fsm_transition(other_request, other_block.setid, int(index,2), other_initial, other_final, other_flush)
+            
             #If other_block is Modified, first flush other_block data to L2
             if other_flush == True: self.flush(index, other_block.tag, other_block.data)
 
@@ -131,8 +142,14 @@ class Cache2w():
             my_block.data = other_block.data 
 
         else:  #Should fetch block from L2 cache
+            if self.debug: print "L1 CACHE("+self.iden+"): Bus Reply: Missing Block NOT found in L1 CACHE("+self.other.iden+")"
             #Change my_block state if necessary
-            my_flush = my_block.fsm_transition("Miss", True)
+            my_request = "Miss"
+            my_initial = my_block.state
+            my_flush = my_block.fsm_transition(my_request)
+            my_final = my_block.state
+            self.debug_fsm_transition(my_request, my_block.setid, int(index,2), my_initial, my_final, my_flush)
+
             #If my_block is Modified, first flush my_block data to L2
             if my_flush == True: self.flush(index, my_block.tag, my_block.data)
 
@@ -143,11 +160,14 @@ class Cache2w():
             
 
     #Function that reads requested data (one byte) and sends it to core (after miss handling)
-    def core_read(self, my_block, offset):
+    def core_read(self, my_block, index, offset):
         #Get requested byte from block
-        data = my_block.read(offset) 
-        
-        my_block.fsm_transition("PrRd")
+        data = my_block.read(offset)
+        my_request = "PrRd"
+        my_initial = my_block.state
+        my_block.fsm_transition(my_request)
+        my_final = my_block.state
+        self.debug_fsm_transition(my_request, my_block.setid, int(index,2), my_initial, my_final, False)
         #Using pipe port to give data to core
         self.data_to_core.send(data)
 
@@ -159,12 +179,20 @@ class Cache2w():
             other_block = self.other.bus_search_block(index, my_block.tag)
             #In MESI state 'S', block may or may not be in other L1, so check if not None
             if other_block is not None:
-                other_block.fsm_transition("BusRdX") #Invalidate other line
-
-        if self.debug: print "L1 CACHE("+self.iden+"): Write value (byte) from CORE("+self.iden+"): " + str(data)
+                other_request = "BusRdX"
+                other_initial = other_block.state
+                other_block.fsm_transition(other_request) #Invalidate other line
+                other_final = other_block.state
+                self.other.debug_fsm_transition(other_request, other_block.setid, int(index,2), other_initial, other_final, False)
+                
+        if self.debug: print "L1 CACHE("+self.iden+"): Write value from CORE("+self.iden+"): " + str(data)
                 
         #Change my_block state if necessary
-        my_block.fsm_transition("PrWr")
+        my_request = "PrWr"
+        my_initial = my_block.state
+        my_block.fsm_transition(my_request)
+        my_final = my_block.state
+        self.debug_fsm_transition(my_request, my_block.setid, int(index,2), my_initial, my_final, False)
         
         #Write data to my_block
         my_block.write(offset, data)
@@ -201,6 +229,12 @@ class Cache2w():
         my_block = block_pair.get_by_tag(tag, False)
         return my_block
 
+
+    def debug_fsm_transition(self, request, setid, index, initial_state, final_state, flush):
+        print "L1 CACHE("+self.iden+"): Block ["+str(setid)+"] from Set ["+str(index)+"] FSM:"
+        print "------------ Request <"+request+">: --Initial State: {"+initial_state.upper()+"}",
+        print "--Final State: {"+final_state.upper()+"} --Flush: ("+("Yes" if flush else "No")+")"
+            
 
 #Function that simulates L1 cache circuit behavior by an infinite loop
 def execution_loop(cache1, cache2, ports):

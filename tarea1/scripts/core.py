@@ -24,18 +24,16 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         instruction = ins_list_core[counter_core+count]
         [address, command] = instruction
         if command == "{L}":
-            if debug:
-                print "\n-------------------------------------------------------------"
-                print "CORE("+str(identity)+"): Read address ["+ bin2hex(address)+"]"
+            print "\n--------------------------------------------------------------------------------------"
+            print "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Read address ["+ bin2hex(address)+"]"
 
             cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
-            if debug: print "CORE("+str(identity)+"): Read value (byte) from L1 CACHE("+str(identity)+"): " + str(data)
+            print "CORE("+str(identity)+"): Read value from L1 CACHE("+str(identity)+"): " + str(data)
         else:
             data = randint(0,255)
-            if debug:
-                print "\n-------------------------------------------------------------"
-                print "CORE("+str(identity)+"): Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
+            print "\n--------------------------------------------------------------------------------------"
+            print "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
 
             data_to_cache.send(data)
             cmd_to_cache.send(instruction)
@@ -81,4 +79,4 @@ def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1):
             counter_core2 += core2_sprint
         sleep(1/100.)
                 
-    print "finished execution..."
+    print "\nFinished execution..."
