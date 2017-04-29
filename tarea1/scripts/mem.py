@@ -19,12 +19,15 @@ from utils import *
 #Main memory class
 class Main_memory():
     #Constructor of the class Main_memory
-    def __init__(self, ports, debug=False):
+    def __init__(self, ports, debug=False, print_queue=None):
         self.mem_data={}
         self.cmd_from_cache=ports["cmd_from_cache"]
         self.data_from_cache=ports["data_from_cache"]
         self.data_to_cache=ports["data_to_cache"]
+
+        self.print_queue=print_queue
         self.debug=debug
+        
 
     #Function that generates a block wrapping 32 random bytes
     def generate_block(self):
@@ -43,7 +46,10 @@ class Main_memory():
             [address, command] = self.cmd_from_cache.recv()
             
             if command == "{L}":
-                if self.debug: print "MEMORY: Send Block ["+bin2hex(address)+"] to L2 CACHE"
+                if self.debug:
+                    print_msg = "MEMORY: Send Block ["+bin2hex(address)+"] to L2 CACHE"
+                    self.print_queue.put(print_msg)
+
                 if address in self.mem_data:
                     self.data_to_cache.send(self.mem_data[address])
                 else:
@@ -51,10 +57,13 @@ class Main_memory():
                     self.store_block(address, block)
                     self.data_to_cache.send(block)
             else:
-                if self.debug: print "MEMORY: Receive Block ["+bin2hex(address)+"] from L2 CACHE"
+                if self.debug:
+                    print_msg = "MEMORY: Receive Block ["+bin2hex(address)+"] from L2 CACHE"
+                    self.print_queue.put(print_msg)
+
                 self.store_block(address, self.data_from_cache.recv())
                     
 #Function to be run by main memory process
-def mem(ports, debug):
-    memory=Main_memory(ports, debug)
+def mem(ports, debug, print_queue):
+    memory = Main_memory(ports, debug, print_queue)
     memory.execution_loop()

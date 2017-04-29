@@ -21,8 +21,7 @@ from block import Block_MVI
 #One way L2 cache class, applies regular Write-back approach to blocks (not MESI)
 class Cache1w():
     #Constructor of the class Cache1w, data size in bytes, block size in bytes
-    def __init__(self, data_size, block_size, ports={}, debug=False):
-        self.debug=debug
+    def __init__(self, data_size, block_size, ports={}, debug=False, print_queue=None):
         #Interface ports to communicate with L1 cache (Python Multiprocessing Pipe)
         self.cmd_from_cache=ports["cmd_from_cache"]
         self.data_from_cache=ports["data_from_cache"]
@@ -52,7 +51,9 @@ class Cache1w():
         for index in xrange(index_size):
             self.data[int2bin(index, self.index_width)]=Block_MVI()
 
-
+        self.print_queue=print_queue
+        self.debug=debug
+            
     #Function that splits the address given by cache instruction in tag, index and offset    
     def split_address(self):
         #instruction is a list, first element is address
@@ -74,22 +75,35 @@ class Cache1w():
         my_block = self.data[index]
 
         miss_flag = tag != my_block.tag or my_block.state == "i"
+
+        if self.debug: operation = "Read" if command=="{L}" else "Write"
+
         #Handle miss condition
         if miss_flag: 
-            if self.debug: print "L2 CACHE: MISS for Block ["+ bin2hex(tag+index+offset)+"]"
+            if self.debug:
+                print_msg = "L2 CACHE: "+operation+" MISS for Block ["+ bin2hex(tag+index+offset)+"]"
+                self.print_queue.put(print_msg)
+                
             self.handle_miss(index, tag, offset)
 
-        if self.debug and not miss_flag: print "L2 CACHE: HIT for Block ["+ bin2hex(tag+index+offset)+"]"
+        if self.debug and not miss_flag:
+            print_msg = "L2 CACHE: "+operation+" HIT for Block ["+ bin2hex(tag+index+offset)+"]"
+            self.print_queue.put(print_msg)
             
         #Execute operation as determined by command (read or write)
         if command=="{L}":
-            if self.debug: print "L2 CACHE: Send Block ["+ bin2hex(tag+index+offset)+"] to L1 Cache"
-            self.cache_read(my_block)
-            
+            if self.debug:
+                print_msg = "L2 CACHE: Send Block ["+ bin2hex(tag+index+offset)+"] to L1 CACHE"
+                self.print_queue.put(print_msg)
+                
+            self.cache_read(index, my_block)
         else:
-            if self.debug: print "L2 CACHE: Receive Block ["+ bin2hex(tag+index+offset)+"] from L1 Cache"
+            if self.debug:
+                print_msg = "L2 CACHE: Receive Block ["+ bin2hex(tag+index+offset)+"] from L1 CACHE"
+                self.print_queue.put(print_msg)
+
             data = self.data_from_cache.recv()
-            self.cache_write(my_block, data)
+            self.cache_write(index, my_block, data)
             
 
             
@@ -97,12 +111,15 @@ class Cache1w():
     def handle_miss(self, index, tag, offset):
         #Get local block to be overwritten
         my_block = self.data[index]
+        flush_flag = my_block.state == "m"
 
         #If my_block is Modified, first flush my_block data to main memory
-        if my_block.state == "m": self.flush(index, my_block.tag, offset, my_block.data)
-
+        if flush_flag: self.flush(index, my_block.tag, offset, my_block.data)
+        
         #Block state transition to valid
-        my_block.state = "v"
+        initial_state = my_block.state
+        final_state = my_block.state = "v"
+        self.debug_transition("Miss", int(index,2), initial_state, final_state, flush_flag)
 
         #Update my_block tag
         my_block.tag = tag 
@@ -111,22 +128,32 @@ class Cache1w():
         
 
     #Function that reads requested data and sends it to L1 cache (after miss handling)
-    def cache_read(self, my_block):
+    def cache_read(self, index, my_block):
+        final_state = initial_state = my_block.state
+        self.debug_transition("Read", int(index,2), initial_state, final_state, flush=False)
+
         #Send data requested by L1 cache
         self.data_to_cache.send(my_block.data)
 
         
     #Function that writes requested data from L1 cache (after miss handling)
-    def cache_write(self, my_block, data):
-        #Impossible to have invalid. If modified -> no state change
-        if my_block.state == "v": my_block.state == "m"
+    def cache_write(self, index, my_block, data):
+        #Impossible to have invalid. If modified => no state change
+        initial_state = my_block.state
+        if my_block.state == "v": my_block.state = "m"
+        final_state = my_block.state
+        self.debug_transition("Write", int(index,2), initial_state, final_state, flush=False)
+            
         #Receive whole block from L1 cache
         my_block.data = data
 
         
     #Function that reads required block from main memory
     def fetch(self, index, tag, offset):
-        if self.debug: print "L2 CACHE: Fetch Block ["+bin2hex(tag+index+offset)+"] from Main Memory"
+        if self.debug:
+            print_msg = "L2 CACHE: Fetch Block ["+bin2hex(tag+index+offset)+"] from Main Memory"
+            self.print_queue.put(print_msg)
+            
         #Assemble a read request for main memory
         mem_request = [tag+index+offset, "{L}"]
         #Send request to main memory
@@ -137,13 +164,23 @@ class Cache1w():
 
     #Function that writes dirty block to main memory 
     def flush(self, index, tag, offset, data):
-        if self.debug: print "L2 CACHE: Flush Block ["+bin2hex(tag+index+offset)+"] to Main Memory"
+        if self.debug:
+            print_msg = "L2 CACHE: Flush Block ["+bin2hex(tag+index+offset)+"] to Main Memory"
+            self.print_queue.put(print_msg)
+
         #Assemble a write request for main memory
         mem_request = [tag+index+offset, "{S}"]
         #Send data to be written in main memory
         self.data_to_mem.send(data)
         #Send request to main memory
         self.cmd_to_mem.send(mem_request)
+
+
+    def debug_transition(self, request, index, initial_state, final_state, flush):
+        print_msg = "L2 CACHE: Block ["+str(index)+"] FSM:\n"
+        print_msg += "--------- Request <"+request+">: --Initial State: {"+initial_state.upper()+"} "
+        print_msg += "--Final State: {"+final_state.upper()+"} --Flush: ("+("Yes" if flush else "No")+")"
+        self.print_queue.put(print_msg)
 
         
     #Function that simulates L2 cache circuit behavior by an infinite loop
@@ -156,7 +193,7 @@ class Cache1w():
                 self.run_instruction()
 
 #Function to be run by L2 cache process
-def cacheL2(ports, debug):
+def cacheL2(ports, debug, print_queue):
     #Instantiation of L2 cache module
-    cache=Cache1w(128*1024, 32, ports, debug)
+    cache=Cache1w(128*1024, 32, ports, debug, print_queue)
     cache.execution_loop() 

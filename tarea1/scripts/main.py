@@ -15,8 +15,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>
 
 import sys, getopt
-
-from multiprocessing import Pipe, Process, Queue
+from multiprocessing import Pipe, Process, JoinableQueue
 from parser import get_addresses
 from core import core
 from cacheL1 import cacheL1
@@ -51,18 +50,19 @@ def option_parser(argv):
 
 
 def print_fn(filename, print_queue):
-    if filename is not None:
-        file_handle = open(filename, "w")
+    if filename is not None: file_handle = open(filename, "w", 0)
     while True:
         try:
-            msg = print_queue.get(block = False)
+            msg = print_queue.get(block=True)
             if filename is not None:
                 print >>file_handle, msg
-            else:
-                print msg
+            else: print msg
+            print_queue.task_done()
         except:
             break
-
+        
+    if filename is not None: file_handle.close()
+    
 
 def main(argv):
     [debug, core1_file, core2_file, core1_sprint,core2_sprint, output_file]=option_parser(argv)
@@ -136,16 +136,16 @@ def main(argv):
                     "data_to_cache": data_mem_to_cache}
 
     #Print communication queue
-    print_queue = Queue()
+    print_queue = JoinableQueue()
     
     #Create the processes
-    print_p = Process(target=print_fn, args=(output_file, print_queue))
     core_p = Process(target=core, args=(core_parameters, debug,
                                         core1_sprint, core2_sprint, print_queue)) #Instructions ratio core1:core2
     cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue))
     cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue))
     mem_p = Process(target=mem, args=(mem_parameters, debug, print_queue))
-
+    print_p = Process(target=print_fn, args=(output_file, print_queue))
+    
     #Process management
     print_p.start()
     core_p.start()
@@ -154,12 +154,12 @@ def main(argv):
     mem_p.start()
     
     core_p.join()
+    print_queue.join()
     
-    print_p.terminate()
     cacheL1_p.terminate()
     cacheL2_p.terminate()
     mem_p.terminate()
-
+    print_p.terminate()
 
 if __name__=="__main__":
     main(sys.argv)
