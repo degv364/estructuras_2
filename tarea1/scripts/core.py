@@ -26,7 +26,7 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         if command == "{L}":
             print_msg = "\n======================================================================================\n"
             print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Read address ["+ bin2hex(address)+"]"
-            print_queue.put(print_msg)
+            debug_print(print_msg, print_queue, debug=True)
             
             cmd_to_cache.send(instruction)
             data = data_from_cache.recv()
@@ -36,7 +36,7 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
             data = randint(0,255)
             print_msg = "\n======================================================================================\n"
             print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
-            print_queue.put(print_msg)
+            debug_print(print_msg, print_queue, debug=True)
             
             data_to_cache.send(data)
             cmd_to_cache.send(instruction)

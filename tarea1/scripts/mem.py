@@ -46,9 +46,8 @@ class Main_memory():
             [address, command] = self.cmd_from_cache.recv()
             
             if command == "{L}":
-                if self.debug:
-                    print_msg = "MEMORY: Send Block ["+bin2hex(address)+"] to L2 CACHE"
-                    self.print_queue.put(print_msg)
+                debug_print("MEMORY: Send Block ["+bin2hex(address)+"] to L2 CACHE",
+                            self.print_queue, self.debug)
 
                 if address in self.mem_data:
                     self.data_to_cache.send(self.mem_data[address])
@@ -57,9 +56,8 @@ class Main_memory():
                     self.store_block(address, block)
                     self.data_to_cache.send(block)
             else:
-                if self.debug:
-                    print_msg = "MEMORY: Receive Block ["+bin2hex(address)+"] from L2 CACHE"
-                    self.print_queue.put(print_msg)
+                debug_print("MEMORY: Receive Block ["+bin2hex(address)+"] from L2 CACHE",
+                            self.print_queue, self.debug)
 
                 self.store_block(address, self.data_from_cache.recv())
                     

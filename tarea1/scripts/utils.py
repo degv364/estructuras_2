@@ -47,17 +47,13 @@ def int2bin(integer, size):
 
     return basic
 
-#def hex2bin(integer):
-#    length=len(integer) #how many chars in the number
-#    return int2bin(int(integer), 4*length) #every hex symbols needs 4 bits
-
-#def bin2hex(integer):
-#    length=len(integer)
-#    return int2hex(int(integer), length/4)
-
-
 def hex2bin(hex_value):
     return bin(int(hex_value, 16))[2:].zfill(len(hex_value)*4)
 
 def bin2hex(bin_value):
     return hex(int(bin_value, 2))[2:].zfill(len(bin_value)/4).upper()
+
+
+def debug_print(print_msg, print_queue, debug):
+    if debug:
+        print_queue.put(print_msg)

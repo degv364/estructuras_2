@@ -69,38 +69,32 @@ class Cache1w():
         #Using pipe port to get core instruction
         self.instruction = self.cmd_from_cache.recv()
         command = self.instruction[1]
+        operation = "Read" if command=="{L}" else "Write"
         [tag, index, offset] = self.split_address()
 
         #Gets a reference to the corresponding index block
         my_block = self.data[index]
 
         miss_flag = tag != my_block.tag or my_block.state == "i"
-
-        if self.debug: operation = "Read" if command=="{L}" else "Write"
+        
 
         #Handle miss condition
         if miss_flag: 
-            if self.debug:
-                print_msg = "L2 CACHE: "+operation+" MISS for Block ["+ bin2hex(tag+index+offset)+"]"
-                self.print_queue.put(print_msg)
-                
+            debug_print("L2 CACHE: "+operation+" MISS for Block ["+ bin2hex(tag+index+offset)+"]",
+                        self.print_queue, self.debug)
             self.handle_miss(index, tag, offset)
-
-        if self.debug and not miss_flag:
-            print_msg = "L2 CACHE: "+operation+" HIT for Block ["+ bin2hex(tag+index+offset)+"]"
-            self.print_queue.put(print_msg)
+        else:
+            debug_print("L2 CACHE: "+operation+" HIT for Block ["+ bin2hex(tag+index+offset)+"]",
+                        self.print_queue, self.debug)
             
         #Execute operation as determined by command (read or write)
         if command=="{L}":
-            if self.debug:
-                print_msg = "L2 CACHE: Send Block ["+ bin2hex(tag+index+offset)+"] to L1 CACHE"
-                self.print_queue.put(print_msg)
-                
+            debug_print("L2 CACHE: Send Block ["+ bin2hex(tag+index+offset)+"] to L1 CACHE",
+                        self.print_queue, self.debug)
             self.cache_read(index, my_block)
         else:
-            if self.debug:
-                print_msg = "L2 CACHE: Receive Block ["+ bin2hex(tag+index+offset)+"] from L1 CACHE"
-                self.print_queue.put(print_msg)
+            debug_print("L2 CACHE: Receive Block ["+ bin2hex(tag+index+offset)+"] from L1 CACHE",
+                        self.print_queue, self.debug)
 
             data = self.data_from_cache.recv()
             self.cache_write(index, my_block, data)
@@ -119,7 +113,7 @@ class Cache1w():
         #Block state transition to valid
         initial_state = my_block.state
         final_state = my_block.state = "v"
-        self.debug_transition("Miss", int(index,2), initial_state, final_state, flush_flag)
+        self.print_fsm_transition("Miss", int(index,2), initial_state, final_state, flush_flag)
 
         #Update my_block tag
         my_block.tag = tag 
@@ -130,7 +124,7 @@ class Cache1w():
     #Function that reads requested data and sends it to L1 cache (after miss handling)
     def cache_read(self, index, my_block):
         final_state = initial_state = my_block.state
-        self.debug_transition("Read", int(index,2), initial_state, final_state, flush=False)
+        self.print_fsm_transition("Read", int(index,2), initial_state, final_state, flush=False)
 
         #Send data requested by L1 cache
         self.data_to_cache.send(my_block.data)
@@ -142,7 +136,7 @@ class Cache1w():
         initial_state = my_block.state
         if my_block.state == "v": my_block.state = "m"
         final_state = my_block.state
-        self.debug_transition("Write", int(index,2), initial_state, final_state, flush=False)
+        self.print_fsm_transition("Write", int(index,2), initial_state, final_state, flush=False)
             
         #Receive whole block from L1 cache
         my_block.data = data
@@ -150,9 +144,8 @@ class Cache1w():
         
     #Function that reads required block from main memory
     def fetch(self, index, tag, offset):
-        if self.debug:
-            print_msg = "L2 CACHE: Fetch Block ["+bin2hex(tag+index+offset)+"] from Main Memory"
-            self.print_queue.put(print_msg)
+        debug_print("L2 CACHE: Fetch Block ["+bin2hex(tag+index+offset)+"] from Main Memory",
+                    self.print_queue, self.debug)
             
         #Assemble a read request for main memory
         mem_request = [tag+index+offset, "{L}"]
@@ -164,9 +157,8 @@ class Cache1w():
 
     #Function that writes dirty block to main memory 
     def flush(self, index, tag, offset, data):
-        if self.debug:
-            print_msg = "L2 CACHE: Flush Block ["+bin2hex(tag+index+offset)+"] to Main Memory"
-            self.print_queue.put(print_msg)
+        debug_print("L2 CACHE: Flush Block ["+bin2hex(tag+index+offset)+"] to Main Memory",
+                    self.print_queue, self.debug)
 
         #Assemble a write request for main memory
         mem_request = [tag+index+offset, "{S}"]
@@ -176,7 +168,7 @@ class Cache1w():
         self.cmd_to_mem.send(mem_request)
 
 
-    def debug_transition(self, request, index, initial_state, final_state, flush):
+    def print_fsm_transition(self, request, index, initial_state, final_state, flush):
         print_msg = "L2 CACHE: Block ["+str(index)+"] FSM:\n"
         print_msg += "--------- Request <"+request+">: --Initial State: {"+initial_state.upper()+"} "
         print_msg += "--Final State: {"+final_state.upper()+"} --Flush: ("+("Yes" if flush else "No")+")"
