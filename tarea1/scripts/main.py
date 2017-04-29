@@ -84,7 +84,6 @@ def main(argv):
     #data core->cacheL1
     [data_cache1_from_core1, data_core1_to_cache1]=Pipe(False)
     [data_cache2_from_core2, data_core2_to_cache2]=Pipe(False)
-
     
     #-------Communication between L1 cache and L2 cache-------
     #cmd cacheL1->cacheL2

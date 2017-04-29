@@ -118,6 +118,9 @@ class Cache2w():
     def handle_miss(self, index, tag, block_pair):
         #Get local block to be overwritten by LRU policy
         my_block = block_pair.get_lru()
+        debug_print("L1 CACHE("+self.iden+"): Choosing LRU: Block in Way ["+str(my_block.setid)+"] from Set ["+str(int(index, 2))+"]",
+                    self.print_queue, self.debug)
+
         #Look for block in the other L1 cache (bus)
         other_block = self.other.bus_search_block(index, tag) 
         

@@ -140,7 +140,7 @@ class Block_pair():
     #Function that returns the LRU block (highest score)
     def get_lru(self):
         #This will be used in case of miss. Block counter must return to 0
-        if self.count1>self.count2:
+        if self.count1 >= self.count2:
             self.count1 = 0
             return self.block1
         else:
