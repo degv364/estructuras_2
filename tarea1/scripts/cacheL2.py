@@ -200,7 +200,7 @@ class Cache1w():
         return f_state
     def formated_final_state_text(self):
         f=self.final_state()
-        text="\n"+"+--+--"*15+"\n|L2 CACHE final state:"
+        text="+--+--"*15+"\n|L2 CACHE Final Statistics:"
         text+="\n| -> Miss rate: "+str(f["Miss_rate"])
         text+="\n| -> Hit rate: "+str(f["Hit_rate"])
         text+="\n"+"+--+--"*15
