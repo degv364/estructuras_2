@@ -29,7 +29,7 @@ def get_addresses(filename):
         if line[0]!='#': #to be able to add coments in instructions files
             [address, action]=line.split()
             address=hex2bin(address.split('x')[1])
-            while len(address)<6:
+            while len(address)<24:
                 address="0"+address
             addresses.append([address, "{"+action+"}"])
     f.close()

@@ -311,7 +311,7 @@ def execution_loop(cache1, cache2, ports, sig_kill=None):
 
 
 #Function to be run by L1 cache process (includes both L1 caches)
-def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None):
+def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None, last_state_port=None):
     #L1 Cache_1 interface pipe ports
     ports1 = {}
     ports1["cmd_from_core"]=ports["cmd_from_core1"]
@@ -341,6 +341,7 @@ def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None):
     
     #Run execution loop
     execution_loop(cache1, cache2, ports, sig_kill)
+    last_state_port.send([cache1.final_state(), cache2.final_state()])
 
     print_ln=cache1.formated_final_state_text()
     print_ln+=cache2.formated_final_state_text()

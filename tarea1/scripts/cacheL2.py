@@ -80,7 +80,7 @@ class Cache1w():
         #Gets a reference to the corresponding index block
         my_block = self.data[index]
 
-        miss_flag = tag != my_block.tag or my_block.state == "i"
+        miss_flag = (tag != my_block.tag) or (my_block.state == "i")
         
 
         #Handle miss condition
@@ -196,6 +196,7 @@ class Cache1w():
                  "Miss_rate":round(self.miss/self.total_instructions, 3)}
 
         f_state["Hit_rate"]=round(1-f_state["Miss_rate"], 3)
+        
 
         return f_state
     def formated_final_state_text(self):
@@ -207,8 +208,10 @@ class Cache1w():
         return text
 
 #Function to be run by L2 cache process
-def cacheL2(ports, debug, print_queue, sig_kill=None):
+def cacheL2(ports, debug, print_queue, sig_kill=None, last_state_port=None):
     #Instantiation of L2 cache module
     cache=Cache1w(128*1024, 32, ports, debug, print_queue)
     cache.execution_loop(sig_kill)
+    last_state_port.send(cache.final_state())
     debug_print(cache.formated_final_state_text(), print_queue, debug)
+    
