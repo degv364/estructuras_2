@@ -37,20 +37,24 @@ def option_parser(argv):
     if "--help" in argv:
         tab="\n"+" "*4
         print "Options: \n"
-        print
         print "--help   Prints this text and exit"
         print
         print "--debug  Activate debug information"
         print
-        print "--generate_random=<file size>, <file name>,*optional->*<file size>, <file name>"+tab+"Generate a file with random instructions for tests of specific size and name and then exit"+tab+"Examples 1:--generate_random=200,a_file; 2: --generate_random=200,a_file,100,an_optional_file"
+        msg = "--generate_random=<file size>, <file name>, optional:(<file size>, <file name>)"+tab
+        msg += "Generate a file with random instructions for tests of specific size and name and then exit"+tab
+        msg += "Examples 1: --generate_random=200,a_file"+tab
+        msg += "         2: --generate_random=200,a_file,100,an_optional_file"
+        
+        print msg
         print
-        print "--ratio: n:m <cores ratio execution> "+tab+"default is 3:1"
+        print "--ratio: n:m <cores ratio execution> "+tab+"(Default is 3:1)"
         print
-        print "--core1_file=<file name>"+tab+"File qhere core1 instructions are taken from"+tab+"default is 'mem_trace_core1.txt'"
+        print "--core1_file=<file name>"+tab+"File where core1 instructions are taken from"+tab+"(Default is 'mem_trace_core1.txt')"
         print
-        print "--core2_file=<file name>"+tab+"File qhere core2 instructions are taken from"+tab+"default is 'mem_trace_core2.txt'"
+        print "--core2_file=<file name>"+tab+"File where core2 instructions are taken from"+tab+"(Default is 'mem_trace_core2.txt')"
         print
-        print "--output_file=<file name>"+tab+"File to store output"
+        print "--output_file=<file name>"+tab+"File to store output"+tab+"(Default is to print output to terminal)"
         sys.exit(0)
         
         
