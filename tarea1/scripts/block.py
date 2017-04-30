@@ -137,10 +137,10 @@ class Block_pair():
         self.count2=0
         
 
-    #Function that returns the LRU block (highest score)
+    #Function that returns the LRU block (lowest score)
     def get_lru(self):
         #This will be used in case of miss. Block counter must return to 0
-        if self.count1 >= self.count2:
+        if self.count1 <= self.count2:
             self.count1 = 0
             return self.block1
         else:
@@ -153,11 +153,11 @@ class Block_pair():
         #Every time the block is not used, the count is increased
         if self.block1.tag == tag and self.block1.state != "i":
             if update_count:
-                self.count2 += 1
+                self.count1 += 1
             return self.block1
         elif self.block2.tag == tag and self.block2.state != "i":
             if update_count:
-                self.count1 += 1
+                self.count2 += 1
             return self.block2
         else:
             #None has the tag or all are invalid, then it is a miss
