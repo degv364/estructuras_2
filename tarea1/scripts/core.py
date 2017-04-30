@@ -24,8 +24,9 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         instruction = ins_list_core[counter_core+count]
         [address, command] = instruction
         if command == "{L}":
-            print_msg = "\n======================================================================================\n"
-            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Read address ["+ bin2hex(address)+"]"
+            print_msg = "\n"+"="*86+"\n"
+            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)
+            print_msg += "> Read address ["+ bin2hex(address)+"]"
             debug_print(print_msg, print_queue, debug=True)
             
             cmd_to_cache.send(instruction)
@@ -34,8 +35,9 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
             print_queue.put(print_msg)
         else:
             data = randint(0,255)
-            print_msg = "\n======================================================================================\n"
-            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)+"> Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
+            print_msg = "\n"+"="*86+"\n"
+            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)
+            print_msg += "> Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
             debug_print(print_msg, print_queue, debug=True)
             
             data_to_cache.send(data)

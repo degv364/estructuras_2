@@ -286,8 +286,8 @@ class Cache2w():
     def formated_final_state_text(self):
         f=self.final_state()
         text="\n"+"+--+--"*15+"\n|L1 CACHE("+self.iden+") Final Statistics:"
-        text+="\n| -> Miss rate (Found in other L1 CACHE): "+str(f["Miss_rate_with_L1"])
-        text+="\n| -> Miss rate (Request to L2 CACHE): "+str(f["Miss_rate_with_L2"])
+        text+="\n| -> Miss Rate (Found in other L1 CACHE): "+str(f["Miss_rate_with_L1"])
+        text+="\n| -> Miss Rate (Request to L2 CACHE): "+str(f["Miss_rate_with_L2"])
         text+="\n| -> Total Miss Rate: "+str(f["Total_miss_rate"])
         text+="\n| -> Total Hit Rate: "+str(f["Hit_rate"])
         return text
