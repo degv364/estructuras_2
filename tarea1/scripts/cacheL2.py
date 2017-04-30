@@ -175,7 +175,7 @@ class Cache1w():
 
 
     def print_fsm_transition(self, request, index, initial_state, final_state, flush):
-        print_msg = "L2 CACHE: Block ["+str(index)+"] FSM:\n"
+        print_msg = "L2 CACHE: Block Index ["+str(index)+"] FSM:\n"
         print_msg += "--------- Request <"+request+">: --Initial State: {"+initial_state.upper()+"} "
         print_msg += "--Final State: {"+final_state.upper()+"} --Flush: ("+("Yes" if flush else "No")+")"
         self.print_queue.put(print_msg)
