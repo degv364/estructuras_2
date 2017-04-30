@@ -198,13 +198,17 @@ class Cache1w():
         f_state["Hit_rate"]=round(1-f_state["Miss_rate"], 3)
 
         return f_state
+    def formated_final_state_text(self):
+        f=self.final_state()
+        text="\n"+"+--+--"*15+"\n|L2 CACHE final state:"
+        text+="\n| -> Miss rate: "+str(f["Miss_rate"])
+        text+="\n| -> Hit rate: "+str(f["Hit_rate"])
+        text+="\n"+"+--+--"*15
+        return text
 
 #Function to be run by L2 cache process
 def cacheL2(ports, debug, print_queue, sig_kill=None):
     #Instantiation of L2 cache module
     cache=Cache1w(128*1024, 32, ports, debug, print_queue)
     cache.execution_loop(sig_kill)
-    #sleep(0.2)
-    print_ln="\n"+"+--+--"*15+"\n L2 CACHE final state\n"+str(cache.final_state())+"\n"
-    debug_print(print_ln, print_queue, debug)
-    print "executed l2"
+    debug_print(cache.formated_final_state_text(), print_queue, debug)

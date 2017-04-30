@@ -282,7 +282,15 @@ class Cache2w():
         f_state["Hit_rate"]=round(1-f_state["Total_miss_rate"], 3)
 
         return f_state
-        
+
+    def formated_final_state_text(self):
+        f=self.final_state()
+        text="\n"+"+--+--"*15+"\n|L1 CACHE("+self.iden+") final state"
+        text+="\n| -> Miss rate (found in other cahce): "+str(f["Miss_rate_with_L1"])
+        text+="\n| -> Miss rate (Request to Cahce L2): "+str(f["Miss_rate_with_L2"])
+        text+="\n| -> Miss rate : "+str(f["Total_miss_rate"])
+        text+="\n| -> Hit rate: "+str(f["Hit_rate"])
+        return text
         
         
         
@@ -334,7 +342,7 @@ def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None):
     #Run execution loop
     execution_loop(cache1, cache2, ports, sig_kill)
 
-    print_ln="\n"+"+--+--"*15+"\n L1 CACHE(1) final state\n"+str(cache1.final_state())+"\n"
-    print_ln+="\n"+"+--+--"*15+"\n L1 CACHE(2) final state\n"+str(cache2.final_state())+"\n"
+    print_ln=cache1.formated_final_state_text()
+    print_ln+=cache2.formated_final_state_text()
     debug_print(print_ln, print_queue, debug)
     
