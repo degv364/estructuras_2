@@ -38,9 +38,11 @@ def option_parser(argv):
         tab="\n"+" "*4
         print "Options: \n"
         print
-        print "--help   Prints this text"
+        print "--help   Prints this text and exit"
         print
         print "--debug  Activate debug information"
+        print
+        print "--generate_random=<file size>, <file name>,*optional->*<file size>, <file name>"+tab+"Generate a file with random instructions for tests of specific size and name and then exit"+tab+"Examples 1:--generate_random=200,a_file; 2: --generate_random=200,a_file,100,an_optional_file"
         print
         print "--ratio: n:m <cores ratio execution> "+tab+"default is 3:1"
         print
@@ -50,7 +52,8 @@ def option_parser(argv):
         print
         print "--output_file=<file name>"+tab+"File to store output"
         sys.exit(0)
-
+        
+        
     for argument in argv:
         if "--ratio=" in argument:
             cores_sprints=argument.split("=")[1]
@@ -62,6 +65,14 @@ def option_parser(argv):
             core2_file=argument.split("=")[1]
         if "--output_file=" in argument:
             output_file =argument.split("=")[1]
+        if "--generate_random=" in argument:
+            options=argument.split("=")[1].split(",")
+            if len(options)==2:
+                random_generator(int(options[0]), options[1])
+            elif len(options)==4:
+                random_generator(int(options[0]), options[1], int(options[2]), options[3])
+            sys.exit(0)
+            
             
     return [debug, core1_file, core2_file, core1_sprint, core2_sprint, output_file]
 
