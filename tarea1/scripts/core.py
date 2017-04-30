@@ -44,7 +44,7 @@ def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
         sleep(1/100.)
         
 
-def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1, print_queue=None):
+def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1, print_queue=None, sig_kill=None):
     #Lists of instructions for both cores
     ins_list_core1=param_dicc["instructions_core1"]
     ins_list_core2=param_dicc["instructions_core2"]
@@ -82,4 +82,7 @@ def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1, print_que
             counter_core2 += core2_sprint
         sleep(1/100.)
                 
-    print "\nFinished execution..."
+    print "\nFinished execution...\nTerminating Processes..."
+    sleep(0.1)
+    sig_kill.send(True)
+    

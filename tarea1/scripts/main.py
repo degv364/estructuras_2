@@ -34,6 +34,26 @@ def option_parser(argv):
     if "--debug" in argv:
         debug=True
 
+    if "--help" in argv:
+        tab="\n"+" "*4
+        print "Options: \n"
+        print
+        print "--help   Prints this text and exit"
+        print
+        print "--debug  Activate debug information"
+        print
+        print "--generate_random=<file size>, <file name>,*optional->*<file size>, <file name>"+tab+"Generate a file with random instructions for tests of specific size and name and then exit"+tab+"Examples 1:--generate_random=200,a_file; 2: --generate_random=200,a_file,100,an_optional_file"
+        print
+        print "--ratio: n:m <cores ratio execution> "+tab+"default is 3:1"
+        print
+        print "--core1_file=<file name>"+tab+"File qhere core1 instructions are taken from"+tab+"default is 'mem_trace_core1.txt'"
+        print
+        print "--core2_file=<file name>"+tab+"File qhere core2 instructions are taken from"+tab+"default is 'mem_trace_core2.txt'"
+        print
+        print "--output_file=<file name>"+tab+"File to store output"
+        sys.exit(0)
+        
+        
     for argument in argv:
         if "--ratio=" in argument:
             cores_sprints=argument.split("=")[1]
@@ -45,13 +65,21 @@ def option_parser(argv):
             core2_file=argument.split("=")[1]
         if "--output_file=" in argument:
             output_file =argument.split("=")[1]
+        if "--generate_random=" in argument:
+            options=argument.split("=")[1].split(",")
+            if len(options)==2:
+                random_generator(int(options[0]), options[1])
+            elif len(options)==4:
+                random_generator(int(options[0]), options[1], int(options[2]), options[3])
+            sys.exit(0)
+            
             
     return [debug, core1_file, core2_file, core1_sprint, core2_sprint, output_file]
 
 
-def print_fn(filename, print_queue):
+def print_fn(filename=None, print_queue=None, sig_kill=None):
     if filename is not None: file_handle = open(filename, "w", 0)
-    while True:
+    while (not sig_kill.poll()):
         try:
             msg = print_queue.get(block=True)
             if filename is not None:
@@ -62,6 +90,7 @@ def print_fn(filename, print_queue):
             break
         
     if filename is not None: file_handle.close()
+    
     
 
 def main(argv):
@@ -102,16 +131,19 @@ def main(argv):
     #data Mem->cacheL2
     [data_cache_from_mem, data_mem_to_cache]=Pipe(False)
 
+    #------Port with sigkill, for last state storage---------
+    [sig_kill_from_core, sig_kill]=Pipe(False)
+
     
     #Parameters in dictionaries for each module
     core_parameters={"instructions_core1":instructions_list_core_1,
-                      "cmd_to_cache1":cmd_core1_to_cache1,
-                      "data_from_cache1":data_core1_from_cache1,
-                      "data_to_cache1":  data_core1_to_cache1,
-                      "instructions_core2":instructions_list_core_2,
-                      "cmd_to_cache2": cmd_core2_to_cache2,
-                      "data_from_cache2": data_core2_from_cache2,
-                      "data_to_cache2":  data_core2_to_cache2} 
+                     "cmd_to_cache1":cmd_core1_to_cache1,
+                     "data_from_cache1":data_core1_from_cache1,
+                     "data_to_cache1":  data_core1_to_cache1,
+                     "instructions_core2":instructions_list_core_2,
+                     "cmd_to_cache2": cmd_core2_to_cache2,
+                     "data_from_cache2": data_core2_from_cache2,
+                     "data_to_cache2":  data_core2_to_cache2} 
 
     cacheL1_parameters={"cmd_from_core1":cmd_cache1_from_core1,
                         "cmd_from_core2": cmd_cache2_from_core2,
@@ -139,11 +171,11 @@ def main(argv):
     
     #Create the processes
     core_p = Process(target=core, args=(core_parameters, debug,
-                                        core1_sprint, core2_sprint, print_queue)) #Instructions ratio core1:core2
-    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue))
-    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue))
-    mem_p = Process(target=mem, args=(mem_parameters, debug, print_queue))
-    print_p = Process(target=print_fn, args=(output_file, print_queue))
+                                        core1_sprint, core2_sprint, print_queue, sig_kill)) #Instructions ratio core1:core2
+    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue, sig_kill_from_core))
+    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue, sig_kill_from_core))
+    mem_p = Process(target=mem, args=(mem_parameters, debug, print_queue, sig_kill_from_core))
+    print_p = Process(target=print_fn, args=(output_file, print_queue, sig_kill_from_core))
     
     #Process management
     print_p.start()
@@ -154,11 +186,12 @@ def main(argv):
     
     core_p.join()
     print_queue.join()
-    
-    cacheL1_p.terminate()
-    cacheL2_p.terminate()
-    mem_p.terminate()
+    cacheL1_p.join()
+    cacheL1_p.join()
+    mem_p.join()
     print_p.terminate()
+    
+    
 
 if __name__=="__main__":
     main(sys.argv)

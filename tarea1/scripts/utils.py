@@ -57,3 +57,30 @@ def bin2hex(bin_value):
 def debug_print(print_msg, print_queue, debug):
     if debug:
         print_queue.put(print_msg)
+
+
+def random_generator(file_size=10, file_name="default.txt", second_size=10, second_file=None):
+    content="#Random generated file"
+    for line in xrange(file_size):
+        content+="\n"+str(randint(0,int("F"*6,16)))+" "
+        if randint(0, 1)==1:
+            content+="L"
+        else:
+            content+="S"
+
+    file_1=open(file_name, "w")
+    file_1.write(content)
+    file_1.close()
+    
+    if second_file is not None:
+        content="#Random generated file"
+        for line in xrange(second_size):
+            content+="\n"+str(randint(0,int("F"*6,16)))+" "
+            if randint(0, 1)==1:
+                content+="L"
+            else:
+                content+="S"
+
+        file_2=open(second_file, "w")
+        file_2.write(content)
+        file_2.close()

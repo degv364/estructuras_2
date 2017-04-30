@@ -53,6 +53,10 @@ class Cache1w():
 
         self.print_queue=print_queue
         self.debug=debug
+
+        #Miss counting variables
+        self.miss=0.
+        self.total_instructions=0.
             
     #Function that splits the address given by cache instruction in tag, index and offset    
     def split_address(self):
@@ -66,6 +70,7 @@ class Cache1w():
     
     #Function that executes the instruction given by the L1 cache
     def run_instruction(self):
+        self.total_instructions+=1
         #Using pipe port to get core instruction
         self.instruction = self.cmd_from_cache.recv()
         command = self.instruction[1]
@@ -103,6 +108,7 @@ class Cache1w():
             
     #Function that handles a miss condition, fetching block from main memory
     def handle_miss(self, index, tag, offset):
+        self.miss+=1
         #Get local block to be overwritten
         my_block = self.data[index]
         flush_flag = my_block.state == "m"
@@ -176,16 +182,27 @@ class Cache1w():
 
         
     #Function that simulates L2 cache circuit behavior by an infinite loop
-    def execution_loop(self):
-        while (True):
+    def execution_loop(self, sig_kill=None):
+        while (not sig_kill.poll()):
             if not self.cmd_from_cache.poll():
                 sleep(1/1000.)
             else:
                 #There is a command from L1 cache
                 self.run_instruction()
+    def final_state(self):
+        #return all variables required for final state
+        f_state={"Misses":self.miss,
+                 "Total_instructions": self.total_instructions,
+                 "Miss_rate":round(self.miss/self.total_instructions, 3)}
+
+        f_state["Hit_rate"]=round(1-f_state["Miss_rate"], 3)
+
+        return f_state
 
 #Function to be run by L2 cache process
-def cacheL2(ports, debug, print_queue):
+def cacheL2(ports, debug, print_queue, sig_kill=None):
     #Instantiation of L2 cache module
     cache=Cache1w(128*1024, 32, ports, debug, print_queue)
-    cache.execution_loop() 
+    cache.execution_loop(sig_kill)
+    print_ln="\n"+"+--+--"*15+"\n L2 CACHE final state\n"+str(cache.final_state())+"\n"
+    print print_ln

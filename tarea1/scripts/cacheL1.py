@@ -58,6 +58,11 @@ class Cache2w():
         self.debug = debug
         self.iden=iden #identity for debug messages
 
+        #miss counting variables
+        self.miss_to_L2=0. #misses that needed L2 to be solved
+        self.miss_to_cache=0. #misses where block was in the other cache
+        self.total_instructions=0.
+
 
     #Function that sets a reference to the other L1 cache in the bus (only two L1 caches)
     def set_cache(self, cache):
@@ -76,6 +81,7 @@ class Cache2w():
 
     #Function that executes the instruction given by the core
     def run_instruction(self):
+        self.total_instructions+=1
         #Using pipe port to get core instruction
         self.instruction = self.cmd_from_core.recv() 
         command = self.instruction[1]
@@ -125,6 +131,7 @@ class Cache2w():
         other_block = self.other.bus_search_block(index, tag) 
         
         if other_block is not None: #Block found in other L1
+            self.miss_to_cache+=1
             debug_print("L1 CACHE("+self.iden+"): Bus Reply: Missing Block found in L1 CACHE("+self.other.iden+")",
                         self.print_queue, self.debug)
                 
@@ -156,6 +163,7 @@ class Cache2w():
             my_block.data = other_block.data 
 
         else:  #Should fetch block from L2 cache
+            self.miss_to_L2+=1
             debug_print("L1 CACHE("+self.iden+"): Bus Reply: Missing Block NOT found in L1 CACHE("+self.other.iden+")",
                         self.print_queue, self.debug)
 
@@ -261,11 +269,27 @@ class Cache2w():
         print_msg += "------------ Request <"+request+">: --Initial State: {"+initial_state.upper()+"} "
         print_msg += "--Final State: {"+final_state.upper()+"} --Flush: ("+("Yes" if flush else "No")+")"
         self.print_queue.put(print_msg)
+
+    def final_state(self):
+        #return all variables required for final state
+        f_state={"Misses_with_L2":self.miss_to_L2, #misses that needed L2 to be solved
+                 "Misses_with_L1":self.miss_to_cache, #misses where block was in the other cache
+                 "Total_instructions": self.total_instructions,
+                 "Total_misses": self.miss_to_L2+self.miss_to_cache,
+                 "Miss_rate_with_L2":round(self.miss_to_L2/self.total_instructions, 3),
+                 "Miss_rate_with_L1":round(self.miss_to_cache/self.total_instructions, 3)}
+        f_state["Total_miss_rate"]=round(f_state["Total_misses"]/self.total_instructions, 3)
+        f_state["Hit_rate"]=round(1-f_state["Total_miss_rate"], 3)
+
+        return f_state
+        
+        
+        
         
 
 #Function that simulates L1 cache circuit behavior by an infinite loop
-def execution_loop(cache1, cache2, ports):
-    while (True):
+def execution_loop(cache1, cache2, ports, sig_kill=None):
+    while (not sig_kill.poll()):
         if not (ports["cmd_from_core1"].poll() or ports["cmd_from_core2"].poll()):
             sleep(1/1000.)
         else:
@@ -279,7 +303,7 @@ def execution_loop(cache1, cache2, ports):
 
 
 #Function to be run by L1 cache process (includes both L1 caches)
-def cacheL1(ports, debug, print_queue):
+def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None):
     #L1 Cache_1 interface pipe ports
     ports1 = {}
     ports1["cmd_from_core"]=ports["cmd_from_core1"]
@@ -308,4 +332,9 @@ def cacheL1(ports, debug, print_queue):
     cache2.set_cache(cache1)
     
     #Run execution loop
-    execution_loop(cache1, cache2, ports) 
+    execution_loop(cache1, cache2, ports, sig_kill)
+
+    print_ln="\n"+"+--+--"*15+"\n L1 CACHE(1) final state\n"+str(cache1.final_state())+"\n"
+    print_ln+="\n"+"+--+--"*15+"\n L1 CACHE(1) final state\n"+str(cache2.final_state())+"\n"
+    print print_ln
+    
