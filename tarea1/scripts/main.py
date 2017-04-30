@@ -79,7 +79,7 @@ def option_parser(argv):
 
 def print_fn(filename=None, print_queue=None, sig_kill=None):
     if filename is not None: file_handle = open(filename, "w", 0)
-    while (not sig_kill.poll()):
+    while (True):
         try:
             msg = print_queue.get(block=True)
             if filename is not None:
@@ -187,9 +187,12 @@ def main(argv):
     core_p.join()
     print_queue.join()
     cacheL1_p.join()
-    cacheL1_p.join()
+    cacheL2_p.join()
     mem_p.join()
+    
+    sleep(0.1)#really be sure, every process has terminated
     print_p.terminate()
+    
     
     
 

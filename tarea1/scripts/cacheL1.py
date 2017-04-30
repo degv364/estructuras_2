@@ -335,6 +335,6 @@ def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None):
     execution_loop(cache1, cache2, ports, sig_kill)
 
     print_ln="\n"+"+--+--"*15+"\n L1 CACHE(1) final state\n"+str(cache1.final_state())+"\n"
-    print_ln+="\n"+"+--+--"*15+"\n L1 CACHE(1) final state\n"+str(cache2.final_state())+"\n"
-    print print_ln
+    print_ln+="\n"+"+--+--"*15+"\n L1 CACHE(2) final state\n"+str(cache2.final_state())+"\n"
+    debug_print(print_ln, print_queue, debug)
     

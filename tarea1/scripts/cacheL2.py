@@ -204,5 +204,7 @@ def cacheL2(ports, debug, print_queue, sig_kill=None):
     #Instantiation of L2 cache module
     cache=Cache1w(128*1024, 32, ports, debug, print_queue)
     cache.execution_loop(sig_kill)
+    #sleep(0.2)
     print_ln="\n"+"+--+--"*15+"\n L2 CACHE final state\n"+str(cache.final_state())+"\n"
-    print print_ln
+    debug_print(print_ln, print_queue, debug)
+    print "executed l2"
