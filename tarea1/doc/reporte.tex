@@ -159,7 +159,7 @@ cual lo lee (manteniéndose en el estado E) y luego lo transfiere a C(1), comple
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EFA.png} \end{centering}
 \\
-Para la siguiente instrucción, \texttt{0xD294C L}, se tiene la misma situación que para el caso
+Para la siguiente instrucción, \texttt{0xD294C L} en C(1), se tiene la misma situación que para el caso
 anterior, en donde no se tiene el bloque en L1(1) y por lo tanto es necesario propagar la solicitud
 hasta memoria, habiendo un MISS en L1(1) y en L2. De la misma forma el bloque en L1(1) transiciona a
 E (exclusivo), ya que L1(2) no tiene dicho bloque. En este caso se puede notar como el set
@@ -169,54 +169,161 @@ a los diferentes valores de index (el cual se compone de 8 bits por el tamaño d
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0D294C.png} \end{centering}
 \\
-En la siguiente instrucción, \texttt{0x12971 S}, antes de hacer la escritura se busca el dato pero
+En la siguiente instrucción, \texttt{0x12971 S} en C(1), antes de hacer la escritura se busca el dato pero
 ocurre un MISS, y no se encuentra el bloque en L1(2), por lo que es necesario traerlo de L2. El
 bloque por sustituirse en L1(1) (LRU) pasa temporalmente al estado E y L2 tiene un MISS por lo que
 trae el bloque de MEM, y el bloque a este nivel transiciona de I a V. Luego de traer el bloque de
-MEM y pasarlo a L1(1), se toma el dato por escribir de C1 y se modifica el bloque, por lo que 
+MEM y pasarlo a L1(1), se toma el dato por escribir de C(1) y se modifica el bloque, por lo que el
+mismo transiciona de E a M (Modified). 
 \\
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_012971.png} \end{centering}
 \\
-T
+En esta instrucción, \texttt{0x13EF2 L} en C(2), L1(2) no tiene el bloque por lo que primero lo solicita al
+Bus, en donde L1(1) indica que sí lo tiene. Esto provoca que la línea en L1(2) transicione de I a S
+(Shared), y que el bloque correspondiente en L1(1) transicione de E a S. En seguida el dato traido
+de L1(1) es leído en L1(2) para enviarlo a C(2) (en esta operación de lectura se conserva el estado
+Shared).
 \\
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_013EF2.png} \end{centering}
 \\
-T
+En seguida para la instrucción \texttt{0x13EEA S} en C(1), el acceso de escritura en L1(1)
+corresponde a un HIT, ya que este es el mismo bloque con el que se trató en la instrucción anterior
+(que al final de la misma queda compartido). De esta forma se recibe el dato por escribir de C(1),
+se invalida el bloque en L1(2) (por lo que dicho bloque pasa de S a I) y el bloque local en L1(1)
+transiciona de S a M, tal como es de esperarse.
 \\
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEA.png} \end{centering}
 \\
-T
+Esta instrucción, \texttt{0x13EEE L} en C(1), corresponde a un HIT de lectura en L1(1), de forma que
+el estado del bloque se mantiene en M, y no es necesario hacer flush a L2 en este caso.
 \\
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEE.png} \end{centering}
 \\
-T
+A continuación, en la instrucción \texttt{0x3514D S} en C(1), se tiene un MISS en L1(1) y el bloque
+no se encuentra en L1(2) (bus), por lo que se requiere traerlo de L2. De esta forma el bloque en
+L1(1) transiciona a E y se tiene un MISS en L2 por lo que se captura el bloque de MEM. Una vez se
+recibe el bloque en L1(1) se procede a escribir el dato brindado por C(1), de forma que el bloque
+transiciona de E a M.
 \\
 \\
 \begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_03514D.png} \end{centering}
 \\
-T
+Para la instrucción siguiente, \texttt{0x35140 L} en C(2), ocurre en primer lugar un MISS en L1(2)
+por lo que se busca primero el bloque en L1(1) y se encuentra (bloque de la instrucción
+anterior). Esto causa que el bloque en L1(2) transicione de I a S y que el de L1(1) lo haga de M a
+S. Debido a que este último se encontraba en M, tal como se observa se genera una condición de
+Flush, de forma que se envía el bloque modificado a L2. Como dicho bloque ya estaba en L2, el mismo
+pasa de V a M, lo que indica que ya no es coherente con MEM. Por otro lado, L1(2) envía el dato a
+C(2), lo cual no genera una transición de estado debido a que es una lectura (el bloque se mantiene
+en S).
 \\
 \\
-\begin{centering} \includegraphics[width=\textwidth]{images/c2_035140.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_05514D.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_055141.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_055155.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c2_0A17FF.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17EF.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17E4.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17E5.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c2_0A17F0.png} \end{centering}
-\begin{centering} \includegraphics[width=\textwidth]{images/c1_0897E4.png} \end{centering}
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_035140.png} \end{centering}
+\\
+En la instrucción \texttt{0x5514D L} en C(1), lo notable es que se puede ver que se está accediendo
+al mismo set (138) que en la instrucción \texttt{0x3514D S} (también de C(1)). De esta manera, como
+se tiene un MISS se sustituye el LRU de la forma esperada, que en este caso es el way 2, por lo que
+la asociatividad permite no tener que reemplazar el bloque correspondiente a \texttt{0x3514D} en el
+way 1 (recientemente utilizado). Por otro lado, el resto de la instrucción corresponde a traer el
+bloque de L2, en donde se tiene un MISS y se debe traer entonces el dato de MEM. Sin embargo, el
+bloque correspondiente está modificado en L2, por lo que ocurre un Flush de L2 a MEM y la transición
+consecuente de M a V. Luego el bloque se envía a L1(1), en donde el mismo transiciona a E y se
+mantiene en dicho estado debido a la lectura.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_05514D.png} \end{centering}
+\\
+Esta instrucción, \texttt{0x55141 L} en C(1), corresponde a un HIT de lectura, por lo que el bloque
+se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_055141.png} \end{centering}
+\\
+Esta instrucción, \texttt{0x55155 L} en C(1), corresponde a un HIT de lectura, por lo que el bloque
+(mismo de la instrucción anterior) se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_055155.png} \end{centering}
+\\
+Para la instrucción siguiente, \texttt{0xA17FF L} en C(2), se tiene un MISS en L1(2) que no se logra
+resolver con L1(1), por lo que se requiere traer el dato de L2, que a su vez tiene un MISS por lo
+que se debe acceder a MEM. El bloque correspondiente en L1(2) transiciona de I a E y se trae el dato
+correspondiente desde los niveles superiores. Como la operación es una lectura dicho bloque se
+mantiene en E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_0A17FF.png} \end{centering}
+\\
+En este caso, para la instrucción \texttt{0xA17EF L} en C(1), ocurre un MISS en L1(1) pero se tiene
+la situación en donde el bloque está en L1(2), por lo que ambos bloques transicionan a S. Como la
+operación es una lectura el bloque en L1(1) se mantiene en el estado compartido.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17EF.png} \end{centering}
+\\
+Esta instrucción, \texttt{0xA17E4 L} en C(1), corresponde a un HIT de escritura (mismo bloque de la
+instrucción previa), de forma que transiciona el bloque en L1(1) de S a M. Además, como se está
+modifcando un bloque compartido se invalida la línea correspondiente en L1(2).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17E4.png} \end{centering}
+\\
+Para esta instrucción, \texttt{0xA17E5 L} en C(1), se tiene un HIT de escritura en L1(1) (mismo
+bloque anterior, que se encuentra en M) de manera que se toma el bloque local y vuelve a modificar,
+de forma que el mismo se mantiene en el estado M
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17E5.png} \end{centering}
+\\
+En este caso, con la instrucción \texttt{0xA17F0 L} en C(2), se tiene un MISS porque este bloque ya
+se encontraba en L1(2) pero en la instrucción \texttt{0xA17E4 L} en C(1) (dos instrucciones atrás)
+fue invalidado, por lo que es necesario traerlo desde L1(1) (el cual está por las 3 instrucciones
+previas). Como este bloque en L1(1) se encontraba modificado es necesario entonces realizar un Flush
+hacia L2, y por otro lado realizar la transición de ambos bloques (en L1(1) y L1(2)) a S, tal como
+se observa. También, como el dato es leído por C(2) el bloque se mantiene en S.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_0A17F0.png} \end{centering}
+\\
+En este caso, para la instrucción \texttt{Ox897E4 S} en C(1) se tiene un MISS que se propaga hasta
+MEM (MISS en L2), habiendo una transición inicialmente de I a E en el bloque de L1(1). Como ocurre
+una escritura por parte de C(1), este bloque transiciona finalmente a M.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0897E4.png} \end{centering}
+\\
+En esta instrucción, \texttt{OxB97E4 S} en C(1), se tiene el mismo index que en caso anterior, y
+como el way 2 solo ha tenido un acceso (instrucción anterior) en comparación con el way 1
+(instrucciones \texttt{0xA17EF L}, \texttt{0xA17E4 L} y \texttt{0xA17E5 L}) el LRU corresponde al
+way 2. Por otra parte, se debe traer el bloque solicitado de L2 el cual tiene un MISS de manera que
+se requiere un acceso a MEM. Además, como la línea original (way 2) en L1(1) está en el estado M, se
+requiere hacer un Flush de este bloque (local) hacia L2. Finalmente, el bloque en L1(1)
+transiciona de M a E.
+\\
+\\
 \begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97E4.png} \end{centering}
+\\
+En este caso, correspondiente a la instrucción \texttt{OxB97F4 S} en C(1), se tiene un HIT de
+lectura por lo que el bloque en L1(1) se mantiene en el estado E.
+\\
+\\
 \begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97F4.png} \end{centering}
+\\
+Finalmente, para la instrucción \texttt{Ox897E3 S} en C(2), se tiene un MISS en L1(2) que no se
+resuelve con L1(1) por lo que se requiere acceder a L2, en donde se tiene un HIT de lectura de forma
+que el bloque en este nivel se mantiene en el estado M, y se envía el mismo a L1(2), en donde este a
+su vez lo envía a C(2) y por lo tanto se mantiene en el estado E.
+\\
+\\
 \begin{centering} \includegraphics[width=\textwidth]{images/c2_0897E3.png} \end{centering}
 
 
-
+De análisis extensivo realizado se puede afirmar que el sistema implementado funciona de forma
+correcta, ya que se comporta de forma esperada en la gran y diversa cantidad de casos estudiados.
 
 \section{Beneficios de MESI}
 
