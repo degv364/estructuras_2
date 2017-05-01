@@ -261,9 +261,100 @@ los cores y sus caches L1 son únicamente de bytes (para esta implementación la
 
 \subsection{Miss rate y Hit rate}
 
+Para analizar de manera sencilla las propiedades de este sistema, se hace una prueba donde se mide
+el miss rate y miss rate de cada nivel de cache. Para esto se generan dos archivos de instrucciones
+aleatorias con el siguiente comando: ``python2 main.py
+--generate_random=100000,rnd.txt,100000,rnd2.txt''. Cada uno con 100000 instrucciones. Cabe destacar
+que estos archivos dentro contienen los clusters y mega clusters que se explicaron en la sección de
+implementación. 
+
+
+Para realizar las pruebas se ejecuta ``python2 main.py --core1_file=rnd.txt --core2_file=rnd2.txt
+--debug --ratio=1:1 --run_n=10''. En caso de ejecutar esta prueba se debe tomar en cuenta que tuvo
+una duración aproximada de 52 minutos. De esta manera se ejecutan 10 pruebas con 9999 instrucciones cada
+una. Se obtiene que el miss rate total para el cache L1 es de 0.00365, que es incluso menor al 1\%
+. Esto indica que L1 es sumamente eficiente en el manejo de misses. En este caso el protocolo MESI
+no tiene ninguna contribución a disminuir tanto el miss rate, sino que esta disminución se logra por
+que el cache se implementa como 2-way set associative LRU. 
+
+En el cache L1 se mide la cantidad de misses que se
+resuelven buscando en el otro cache L1, y por separado la cantidad de misses que se resuelven
+pidiendo el dato a L2. Se tiene que el miss rate resuelto en el otro cache es de 0, mientras que el
+miss rate resuelto en L2 es 0.00365. Entonces la gran mayoría de misses se resuelven en el cache
+L2. Esto se debe a que en esta prueba aleatoria no existe localidad espacial entre cores, es decir
+ambos cores se encuentran operando con direcciones distantes, y por tanto los datos en los caches L1
+no son cercanos.
+
+Luego se debe tomar en cuenta también el miss rate de cache L2. Este tiene un miss rate de 1, lo que
+implica que la gran mayoría de las peticiones resultan en un miss. Esto se debe a que el tamaño del
+bloque del cache L1 y del cache L2 es el mismo, entonces la capacidad de manejar localidad espacial
+de ambos niveles del cache es sumamente similar. Entones los misses que ocurren en L1 porque no tiene
+suficiente manejo de localidad espacial, también van a suceder en cache L2. Por otra parte se debe
+tomar en cuenta que L2 debe manejar peticiones de ambos cache L1, que como ya se demostró trabajan
+con direcciones distintas, esta situación puede estar generando conflictos en L2, que le provoquen
+realizar flushes de sus datos a la memoria principal, y por tanto misses. Finalmente respecto a la
+localidad temporal, como el cache L1 es 2-way LRU podría tener hasta mejor localidad temporal que
+L2. L2 en lo único que es mejor que L1 es en su tamaño, por lo que puede contener más direcciones
+distantes, esto ayuda a evitar misses por conflicto.
+
+Por otra parte cuando se corre al simulación con los datos propuestos por el profesor, se obtienen
+resultados distintos. El miss rate de L1 total es de 0.247, que es peor que en el caso
+aleatorio. Por otra parte el miss rate que se soluciona en otro cache aumentó a 0.1095, lo que
+implica que alrededor del 10\% de instrucciones son misses que se resuelven en el otro cache, esto
+indica un mayor acople entre las instrucciones que ejecutan ambos cores. Luego
+el miss rate que se resuelve en L2, aumentó a 0.1375, entonces en general se tienen más accesos a L2
+que en el caso aleatorio. Finalmente el miss rate de L2 es mucho menor, para este caso es de 0.478,
+lo que implica que se aprovecha mejor la característica de L2 de ser más grande. 
+
 \section{Beneficios de MESI}
 
+El principal beneficio es que permite tener coherencia entre varios caches del mismo nivel, y con
+los caches del siguiente nivel, ya que esta es al razón por la que se creó este protocolo. El caché
+más básico únicamente tiene la bandera de invalid, esta bandera permite que no se envíen datos al
+core o a memoria que no tienen sentido.
+
+Sin embargo si el cache solamente tiene invalid, entonces se
+va a necesitar hacer un flush en cada miss, lo que incrementa el miss penalty. Para solucionar este
+problema se utiliza la bandera de Modified. De esta manera el sistema sabe cuando el dato en cache
+ha cambiado respecto al dato en la memoria del siguiente nivel, de manera que si no ha cambiado,
+cuando suceda un miss no se debe hacer el flush. Modified Permite asegurar coherencia con los
+siguientes niveles, y ayuda a disminuir el miss penalty.
+
+Por otra parte la bandera shared se utiliza para la coherencia de datos cuando se tienen dos o más
+caches en el mismo nivel. En el caso de que un dato compartido sea modificado se deben eliminar las
+copias del dato en los otros caches, para no permitirle a los otros cores accesar a datos
+erróneos. De esta manera se obtiene una sincronización entre los caches, y en caso que otro core
+necesite el valor modificado, entonces se toma desde el cache, y no es necesario pedirlo al
+siguiente nivel de cache.
+
+El problema con estas banderas es que constantemente se encuentran haciendo accesos al bus que
+interconecta los caches. Esto puede tener un efecto negativo en el miss penalty. Además a la hora de
+modificar un dato shared se debe buscaren el resto de caches para invalidar copias, por lo que se
+pueden tener efectos negativos en el hit time. Con la adición de la bandera exclusive, se pude
+resolver parte del problema, ya que se indica que los datos exclusive están únicamente en un cache y
+no es necesario buscarlos en los otros caches. Esto ahorra muchas transacciones en el bus. Cabe
+destacar que en las pruebas aleatorias los caches del nivel L1 casi no compartían datos, entonces casi
+no habían bloque sen estado shared.Por lo que en ese caso particular la bandera de Exclusive ayuda a
+aumentar mucho la eficiencia del sistema.
+
+En general el protocolo MESI, provee los beneficios que se espera de un protocolo de coherencia. La bandera I ayuda a que no se envíen al core o a memoria datos sin
+sentido. La bandera M ayuda a disminuir la cantidad de flushes, y por tanto a reducir el miss
+rate. La bandera S permite coherencia entre caches del mismo nivel, y finalmente la bandera E ayuda
+a disminuir los acceso al bus y por tanto ayudan a mejorar el miss rate y el hit time. 
+
 \section{Deficiencias de MESI}
+
+MESI es un protocolo que permite de manera satisfactoria garantizar la coherencia de los datos. Sin
+embargo aun con el aditamento de la bandera de modified, suceden varios flushes que no son
+necesarios, principalmente con los bloques que se encuentran shared. Ya que al modificar un bloque
+en estado shared, se deben invalidar todas sus copias, lo que provoca que hayan posibles misses
+para otros cores. Entonces al modificar bloques en shared, se aumenta el miss rate del sistema. Esta
+medida del protocolo MESI no toma en consideración si el dato se ha utilizado más en
+los otros caches (y por lo tanto probablemente se necesite nuevamente), tampoco permite
+sincronización dentro del mismo nivel de caches, sino que definitivamente se requiere de acceso al siguiente nivel
+de memoria para resolver los misses (el dato modified necesita flush, para ser enviado a otros
+caches). Entonces no solo se tiene un mal miss rate, sino también un mal miss penalty. MESI necesita
+mejorarse en el manejo de modificaciones a datos en shared.  
 
 
 \end{document}
