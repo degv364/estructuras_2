@@ -7,5 +7,6 @@
 *.aux
 *.log
 *.pdf
+*.zip
 
 *.pyc
