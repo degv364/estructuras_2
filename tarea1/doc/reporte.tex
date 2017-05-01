@@ -10,12 +10,13 @@
 
 \begin {document}
 
+\lstset{language=,breaklines=true, basicstyle=\tiny}
+\lstset{stepnumber=0}
+
 \title{Tarea1: Simulación de cahce}
 \author{Daniel García Vaglio}
 \maketitle
-%\begin{abstract}
 
-%\end{abstract}
 
 
 \section{Protocolo MESI}
@@ -65,7 +66,6 @@ instrucciones específicas, a continuación se muestra un resumen:
 \end{center}
 
 
-
 \section{Implementación}
 Se toma la decisión de implementarlo en Python 2.7 que está disponible en la última versión de
 ubuntu LTS. Primeramente se utiliza una función de ``parseo'', que lee el documento con las instrucciones
@@ -96,6 +96,127 @@ es de lectura y ejecuta según lo obtenido.
 
 Los miembros de la clase cacheL1 son los siguientes (se explican uno a uno):
 \section{Funcionamiento y Pruebas}
+\subsection{Verificación funcional del sistema}
+Para demostrar el funcionamiento del sistema implementado, se llevó a cabo una prueba diseñada para
+generar distintos casos de interacción entre cores, los caches L1, cache L2 y la memoria principal,
+de forma que se pudiera verificar si las transiciones de estados de MESI, el manejo de misses, las
+situaciones de flush y de invalidación, se dan de forma esperada. 
+
+Los archivos de instrucciones utilizados para este apartado se encuentran en la carpeta
+\texttt{scripts/tests/}, y se llaman \texttt{test1.txt} (core 1) y \texttt{test2.txt} (core
+2). Dichas instrucciones se muestran en la Tabla \ref{tab:func_test}, en donde estas se agruparon
+para visualizar que se ejecutan primero 3 instrucciones del core 1 (izquierda) y luego una
+instrucción del core 2 (derecha) para posteriormente repetir el mismo patrón con las siguientes.
+
+A continuación se procederá a darle seguimiento al estado del sistema a medida que se ejecutan las
+instrucciones. Esto mediante la impresión en el archivo de salida generado por el programa
+\texttt{main.py}, en donde se estableció la bandera \texttt{debug} para generar toda la información
+disponible. 
+
+Nota: En la discusión se utilizará L1(1) y L1(2) para indicar el cache L1 del core 1 y del core 2,
+respectivamente. De la misma forma se utilizará L2 para hace referencia al cache L2 y MEM para
+indicar la memoria principal. Por otra parte, cuando se mencionen los cores se utilizará la
+abreviación C(1) (core 1) y C(2) (core 2). Cabe destacar también que cuando se hace referencia a un
+bloque se utiliza la dirección del primer byte del mismo.
+
+\begin{table}[h]
+  \centering
+  \caption{Instrucciones para la prueba de funcionamiento}
+  \label{tab:func_test}
+  \begin{tabular}{|l|l|l|l|}
+    \hline
+    \multicolumn{2}{|c|}{\begin{tabular}[c]{@{}c@{}}Instrucciones\\ Core 1\end{tabular}} & \multicolumn{2}{|c|}{\begin{tabular}[c]{@{}c@{}}Instrucciones\\ Core 2\end{tabular}} \\
+    \hline
+    0x13EFA   & L   & 0x13EF2  & L  \\
+    0xD294C   & L   &  &  \\
+    0x12971   & S   &  &  \\ \hline
+    0x13EEA   & S   & 0x35140  & L  \\
+    0x13EEE   & L   &  &  \\
+    0x3514D   & S   &  &  \\ \hline
+    0x5514D   & L   & 0xA17FF  & L  \\
+    0x55141   & L   &  &  \\        
+    0x55155   & L   &  &  \\ \hline         
+    0xA17EF   & L   & 0xA17F0 & L \\         
+    0xA17E4   & S   &  &  \\         
+    0xA17E5   & S   &  &  \\ \hline      
+    Ox897E4   & S   & Ox897E3 & L \\     
+    0xB97E4   & L   &  &  \\        
+    0xB97F4   & L   &  &  \\
+    \hline
+  \end{tabular}
+\end{table}
+
+A continuación se presenta la salida al ejecutar la instrucción \texttt{0x13EFA L} en C(1). Tal como
+se muestra en este caso no se tiene la instrucción en L1(1) previamente (primera instrucción), por
+lo que dicho cache indica un MISS, de forma que se selecciona el bloque LRU (se toma por defecto el
+way 1) para sustituirlo. Luego se busca el bloque (indicado por el primer byte 013EE0) en L1(2)
+(mediante el bus), pero no se encuentra, por lo que es necesario traerlo de L2. Este bloque en L1(1)
+transiciona de estado de I a E, ya que va a ser el único en tener los datos del bloque. Se procede a
+solicitar el bloque a L2, lo que constituye un MISS para L2 por lo que este lo trae de MEM y el
+bloque en L2 transiciona de I a V (Valid). Luego se lee en L2 dicho bloque para pasarlo a L1(1), el
+cual lo lee (manteniéndose en el estado E) y luego lo transfiere a C(1), completando la lectura.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EFA.png} \end{centering}
+\\
+Para la siguiente instrucción, \texttt{0xD294C L}, se tiene la misma situación que para el caso
+anterior, en donde no se tiene el bloque en L1(1) y por lo tanto es necesario propagar la solicitud
+hasta memoria, habiendo un MISS en L1(1) y en L2. De la misma forma el bloque en L1(1) transiciona a
+E (exclusivo), ya que L1(2) no tiene dicho bloque. En este caso se puede notar como el set
+correspondiente para esta instrucción es distinto que para la instrucción anterior, lo cual se debe
+a los diferentes valores de index (el cual se compone de 8 bits por el tamaño de 16 KB para L1).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0D294C.png} \end{centering}
+\\
+En la siguiente instrucción, \texttt{0x12971 S}, antes de hacer la escritura se busca el dato pero
+ocurre un MISS, y no se encuentra el bloque en L1(2), por lo que es necesario traerlo de L2. El
+bloque por sustituirse en L1(1) (LRU) pasa temporalmente al estado E y L2 tiene un MISS por lo que
+trae el bloque de MEM, y el bloque a este nivel transiciona de I a V. Luego de traer el bloque de
+MEM y pasarlo a L1(1), se toma el dato por escribir de C1 y se modifica el bloque, por lo que 
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_012971.png} \end{centering}
+\\
+T
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_013EF2.png} \end{centering}
+\\
+T
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEA.png} \end{centering}
+\\
+T
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEE.png} \end{centering}
+\\
+T
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_03514D.png} \end{centering}
+\\
+T
+\\
+\\
+\begin{centering} \includegraphics[width=\textwidth]{images/c2_035140.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_05514D.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_055141.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_055155.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c2_0A17FF.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17EF.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17E4.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0A17E5.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c2_0A17F0.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0897E4.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97E4.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97F4.png} \end{centering}
+\begin{centering} \includegraphics[width=\textwidth]{images/c2_0897E3.png} \end{centering}
+
+
+
 
 \section{Beneficios de MESI}
 
