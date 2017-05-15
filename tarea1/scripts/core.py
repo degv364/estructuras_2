@@ -16,31 +16,39 @@
 
 from utils import *
 
-def execute_3(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
-              data_from_cache=None, counter_core=0, debug=False):
+def execute_n(ins_list_core=[], cmd_to_cache=None, data_to_cache=None,
+              data_from_cache=None, counter_core=0, debug=False, limit=3,
+              identity=0, print_queue=None):
     count = 0
-    while counter_core+count < len(ins_list_core) and count < 3:
+    while counter_core+count < len(ins_list_core) and count < limit:
         instruction = ins_list_core[counter_core+count]
         [address, command] = instruction
         if command == "{L}":
-            if debug:
-                print "\n--------------------------------------------"
-                print "CORE1 read "+ bin2hex(address)
-
+            print_msg = "\n"+"="*86+"\n"
+            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)
+            print_msg += "> Read address ["+ bin2hex(address)+"]"
+            debug_print(print_msg, print_queue, debug=True)
+            
             cmd_to_cache.send(instruction)
+            
             data = data_from_cache.recv()
+            print_msg = "CORE("+str(identity)+"): Read value from L1 CACHE("+str(identity)+"): " + str(data)
+            print_queue.put(print_msg)
         else:
-            if debug:
-                print "\n--------------------------------------------"
-                print "CORE1 write "+ bin2hex(address)
-
-            data_to_cache.send(randint(0,255))
+            data = randint(0,255)
+            print_msg = "\n"+"="*86+"\n"
+            print_msg += "CORE("+str(identity)+"): <I"+str(counter_core+count)
+            print_msg += "> Write value ("+str(data)+") to address ["+ bin2hex(address)+"]"
+            debug_print(print_msg, print_queue, debug=True)
+            
+            
+            data_to_cache.send(data)
             cmd_to_cache.send(instruction)
         count+=1
         sleep(1/100.)
         
 
-def core(param_dicc, debug):
+def core(param_dicc=None, debug=False, core1_sprint=3, core2_sprint=1, print_queue=None, sig_kill=None):
     #Lists of instructions for both cores
     ins_list_core1=param_dicc["instructions_core1"]
     ins_list_core2=param_dicc["instructions_core2"]
@@ -65,27 +73,20 @@ def core(param_dicc, debug):
     while counter_core1 < len(ins_list_core1) or counter_core2 < len(ins_list_core2):
         
         if counter_core1 < len(ins_list_core1):
-            #Execute 3 instructions
-            execute_3(ins_list_core1, cmd_to_cache1, data_to_cache1,
-                      data_from_cache1, counter_core1, debug)
-            counter_core1 += 3
+            #Execute core1_sprint instructions
+            execute_n(ins_list_core1, cmd_to_cache1, data_to_cache1,
+                      data_from_cache1, counter_core1, debug, core1_sprint,
+                      identity="1", print_queue=print_queue)
+            counter_core1 += core1_sprint
         if counter_core2 < len(ins_list_core2):
-            #Execute 1 instruction
-            instruction = ins_list_core2[counter_core2]
-            [address, command] = instruction
-            if command == "{L}":
-                if debug:
-                    print "\n--------------------------------------------"
-                    print "CORE2 read "+ bin2hex(address)
-                cmd_to_cache2.send(instruction)
-                data=data_from_cache2.recv()
-            else:
-                if debug:
-                    print "\n--------------------------------------------"
-                    print "CORE2 write "+ bin2hex(address)
-                data_to_cache2.send(randint(0,255))
-                cmd_to_cache2.send(instruction)
-            counter_core2 += 1
+            #Execute core2_sprint instruction
+            execute_n(ins_list_core2, cmd_to_cache2, data_to_cache2,
+                      data_from_cache2, counter_core2, debug, core2_sprint,
+                      identity="2", print_queue=print_queue)
+            counter_core2 += core2_sprint
         sleep(1/100.)
                 
-    print "finished execution..."
+    print "\nFinished execution...\nTerminating Processes..."
+    sleep(0.1)
+    sig_kill.send(True)
+    
