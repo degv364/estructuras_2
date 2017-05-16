@@ -34,6 +34,6 @@ void save_images(string name, Mat* sec_mat, Mat* par_mat);
 
 //Aplicar el filtro gaussiano de manera secuencial y paralela a una imagen
 vector<double> experiment(int index, int cores, int window_size, string imageName,
-			  bool show, bool save);
+			  bool show, bool save, bool compare);
 
 #endif

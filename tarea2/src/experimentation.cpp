@@ -41,7 +41,7 @@ void save_images(string name, Mat* sec_mat, Mat* par_mat){
 
 
 vector<double> experiment(int index, int cores, int window_size, string imageName,
-			  bool show, bool save){
+			  bool show, bool save, bool compare){
   vector<double> result(2);
   int interval; // intervalo para dividir la imagen
   mutex m; // FIXME: tal vez no sea necesario
@@ -89,6 +89,11 @@ vector<double> experiment(int index, int cores, int window_size, string imageNam
   if (save==true) {
     cout<<"Guardando resultados ..."<<endl;
     save_images(imageName, sec_mat, par_mat);
+  }
+  if (compare==true){
+    cout<<"Comparando ambos resultados ..."<<endl;
+    if (sec.compare(&par)) cout<<"Resultados iguales!"<<endl;
+    else cout<<"**ERROR**"<<endl;
   }
   result[0]=sequential_t;
   result[1]=parallel_t;

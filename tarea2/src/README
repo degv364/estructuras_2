@@ -1,0 +1,15 @@
+Para poder correr el main, se usan las siguientes opciones:
+cores: cantidad de cores a usar en el caso paralelo
+window_size: tamano de la ventana.
+show: si se muestran las imagenes o no
+save: si se guardan las imagenes o no
+core_path: si se ahce recorrido desde 1 core hasta 'cores' cores. FIXME: NOT IMPLEMENTED YET
+compare: si se deben comparar los resultados paralelos y secuenciales.
+
+Luego una lista de los nombres de las imagenes a filtrar.
+
+
+Para correrlo: ./main.x 4 10 1 0 0 1 image1.jpg image2.jpg
+
+Va a utilizar 4 cores, una ventana de 10 pixeles, va a mostrar los datos, no va a guardar las imagenes, no va a recorrer todas las catidades de cores, y va acomparar si los resultados son iguales. Para cada imagen especificada.
+

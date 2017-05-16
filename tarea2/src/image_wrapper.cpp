@@ -152,6 +152,22 @@ Vec3b Image_wrapper::get_neighbor_gauss(int cx, int cy, int r, double std_dev){
   return uchar_result;
 }
 
+bool Image_wrapper::compare(Image_wrapper* other){
+  if (this->get_width()==other->get_width() &&
+      this->get_height()==other->get_height()){
+    
+    for (int x=0; x<this->get_width(); x++){
+      for (int y=0; y<this->get_height(); y++){
+	if (this->get_r(x,y)!=other->get_r(x,y)) return false;
+	if (this->get_g(x,y)!=other->get_g(x,y)) return false;
+	if (this->get_b(x,y)!=other->get_b(x,y)) return false;
+      }
+    }
+  }
+  else return false;
+  return true;
+}
+
 
 
 

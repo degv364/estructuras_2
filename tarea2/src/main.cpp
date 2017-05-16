@@ -36,27 +36,31 @@ int main(int argc, char** argv ){
   int cores=4, window_size=10;
   double std_dev=3;
   vector<string> image_names(1);
-  bool show=false, save=false;
+  bool show=false, save=false, core_path=false, compare=false;
   image_names[0]="Highimgnoise.jpg";
-  if (argc>4){
+  if (argc>5){
     cores= atoi(argv[1]);
     window_size= atoi(argv[2]);
     std_dev=window_size/2;
-    if (1==atoi(argv[3])) show=true;
-    if (1==atoi(argv[4])) save=true;
+    //if arg is 1, become true. 
+    show=     (1==atoi(argv[3]));
+    save=     (1==atoi(argv[4]));
+    core_path=(1==atoi(argv[5]));
+    compare=  (1==atoi(argv[6]));
   }
-  if (argc>5){
+  if (argc>7){
     //image names were specified
-    image_cant=argc-5;
+    image_cant=argc-7;
     image_names.resize(image_cant);
     for (int i=0; i<image_cant; i++){
-      image_names[i]=string(argv[i+5]);
+      image_names[i]=string(argv[i+7]);
     }
   }
   result_times.resize(image_cant);
   for (int img=0; img<image_cant; img++){
     cout<<"Filtrando "<<image_names[img]<<" ..."<<endl;
-    result_times[img]=experiment(img, cores, window_size, image_names[img], show, save);
+    result_times[img]=experiment(img, cores, window_size, image_names[img],
+				 show, save, compare);
     
   }
   
