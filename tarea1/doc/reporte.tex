@@ -10,33 +10,32 @@
 
 \begin {document}
 
-\title{Tarea1: Simulación de cahce}
-\author{Daniel García Vaglio}
-\maketitle
-%\begin{abstract}
+\title{Tarea1: Simulación de cache}
+\author{Daniel García Vaglio B42781, Esteban Zamora Alvarado B47769}
 
-%\end{abstract}
+\maketitle
 
 
 \section{Protocolo MESI}
-El protocolo MESI toma su nombre de las banderas que se utilizan para lograr la concurrencia, que
-indican el estado del bloque. Estas banderas son: ``Invalid'', ``Exclusive'', ``Shared'' y
-``Modified''(están presentes en cada bloque). Invalid implica que el bloque se encuentra inválido, entonces no se pueden hacer
-lecturas del dato. Exclusive se refiere a que el bloque se encuentra válido en esta unidad de cache,
-pero no se encuentra válido en ningún ninguna otra. Luego Shared se refiere a que el bloque se
-encuentra válido en la presente unidad de cache, pero también se encuentra válido en alguna otra
-unidad de caché (al menos una). Finalmente Modified se utiliza para señalar que el bloque se
-encuentra válido en el presente cache, pero que a diferencia de exclusive y shared, este dato no
-coincide con el dato en memoria RAM.
+El protocolo MESI toma su nombre de las banderas que se utilizan para lograr la coherencia entre
+caches del mismo nivel y caches de niveles distintos, que indican el estado del bloque. Estas
+banderas son: ``Invalid'', ``Exclusive'', ``Shared'' y ``Modified''(están presentes en cada
+bloque). \textit{Invalid} implica que el bloque se encuentra inválido, entonces no se pueden hacer
+lecturas del dato. \textit{Exclusive} se refiere a que el bloque se encuentra válido en esta unidad
+de cache, pero no se encuentra válido en ningún ninguna otra. Luego \textit{Shared} se refiere a que
+el bloque se encuentra válido en la presente unidad de cache, pero también puede estar válido en
+alguna otra unidad de caché. Finalmente \textit{Modified} se utiliza para señalar que el bloque se
+encuentra válido en el presente cache, pero que a diferencia de \textit{Exclusive} y
+\textit{Shared}, este dato no coincide con el dato en memoria RAM.
 
-Este protocolo es utilizado para la concurrencia de los datos en cache, ya que con el sistema de
+Este protocolo es utilizado para la coherencia de los datos en cache, ya que con el sistema de
 banderas evita que se lea un dato que no es válido (que haya sido escrito por otro Core, y se lee el
 dato sin mutar), y también garantiza que los datos mutados en cache, se guardan en la memoria RAM
 adecuadamente.
 
 En cuanto a la implementación, se deben considerar las instrucciones que el cache puede recibir,
 estas vienen de dos partes, del core y del bus. El bus es un módulo que está conectado a todos los
-caches del mismo nivel y se encarga de mantener los datos concurrentes entre ellos. En primer lugar
+caches del mismo nivel y se encarga de mantener los datos coherentes entre ellos. En primer lugar
 se tiene que tomar en cuenta que el cache recibe instrucciones desde el core, en el que trata de
 accesar a un bloque específico. Dependiendo de la bandera en el bloque el bus debe ejecutar
 instrucciones específicas, a continuación se muestra un resumen:
@@ -45,61 +44,544 @@ instrucciones específicas, a continuación se muestra un resumen:
  \hline
  Instrucción & Bandera & Acción \\ 
  \hline
-   \multirow{4}{*}{Core Read}  & Modified & \textbullet Estado permanece igual \\
+   \multirow{10}{*}{Core Read}  & \textit{Modified} & \textbullet Estado permanece igual \\
                                &          & \textbullet Hit \\ \cline{2-3}
    
-             & Exclusive & \textbullet Estado permanece igual \\
+             & \textit{Exclusive} & \textbullet Estado permanece igual \\
              &           & \textbullet Hit \\ \cline{2-3}
  
-             & Shared & \textbullet Estado permanece igual  \\
+             & \textit{Shared} & \textbullet Estado permanece igual  \\
              &        & \textbullet Hit \\ \cline{2-3}
  
-             & Invalid & \textbullet Enviar comando BusRead al Bus \\
+             & \textit{Invalid} & \textbullet Verificar si el dato está en otro cache\\
              &         & \textbullet Se hace fetch al nivel siguiente de cache\\
-             &         & \textbullet Verificar si el dato está en otro cache\\
-             &         & \textbullet Si está pasar a Shared, si no pasar a Exclusive \\ \cline{2-3}
+             &         & \textbullet Si está pasar a \textit{Shared}, si no pasar a \textit{Exclusive} \\ \cline{2-3}
  \hline
-  88 & 788 & 6344 \\ [1ex] 
+   \multirow{9}{*}{Core Write} & \textit{Modified} & \textbullet Estado permanece igual \\
+             & & \textbullet Write Hit\\ \cline{2-3}
+             & \textit{Exclusive} & \textbullet Estado cambia a \textit{Modified} \\
+             & & \textbullet Write Hit\\ \cline{2-3}
+             & \textit{Shared} & \textbullet Estado pasa a \textit{Modified} \\
+             & & \textbullet Se invalidan copias del bloque en otros caches.\\
+             & & \textbullet Write Hit\\ \cline{2-3}
+             & \textit{Invalid}  & \textbullet Estado pasa a \textit{Modified}\\
+   & & \textbullet Write Miss\\ \cline{2-3}
  \hline
  \end{tabular}
 \end{center}
 
 
-
 \section{Implementación}
 Se toma la decisión de implementarlo en Python 2.7 que está disponible en la última versión de
-ubuntu LTS. Primeramente se utiliza una función de ``parseo'', que lee el documento con las instrucciones
-y las transforma en listas de parejas. Donde en cada entrada, el primer elemento es la dirección, y
-el segundo elemento indica si es de lectura o escritura. Esta lista se pasa al core, para que la
-ejecute.
+ubuntu LTS. El script principal se llama ``main.py'' y tiene varios modos de funcionamiento que se
+configuran con argumentos a la hora de ejecutarlo. Para una descripción breve de las funcionalidades
+del script principal y su uso, se puede ejecutar ``python2 main.py --help''. Se puede cambiar los
+archivos que se utilizan para las instrucciones de los cores, se puede activar la bandera de
+``debug'' para recibir más información de la simulación, también al indicar un ``output\_file'' esta
+información se guarda en un archivo en lugar de imprimirse en terminal, para permitir que se revise
+después. Además se puede editar la razón de instrucciones que ejecuta cada core, por defecto el core
+1 ejecuta 3 mientras el core 2 ejecuta 1, como se indica en las instrucciones de la tarea, pero
+estos parámetros se pueden edita. También se ofrece la opción de ejecutar una simulación o varias,
+de manera que se puedan hacer varias pruebas separadas con una sola ejecución del script.
 
-Para poder emular la concordancia que sucede en el sistema real se utilizan distintos procesos que se
-ejecutan en paralelo. Python ofrece una interfaz de mensajes para poder intercomunicar procesos, por
-lo que se utilizan a modo de puertos de comunicación. De esta manera, por ejemplo los datos que se
-piden de memoria llegan por un puerto, y las instrucciones que se envían a cache van en otro puerto
-distinto. Existen 4 módulos, el primero son los cores, luego los caches L1, otro para el cache L2, y
-finalmente un módulo para la memoria principal. Cada módulo corresponde a una función cuya entrada
-es un diccionario con los puertos de entrada y salida del mismo. La función se encuentra
-constantemente escuchando los puertos de entrada, cuando llega un comando, lo ejecuta y genera los
-datos que se envían por los puertos de salida. 
+Otra funcionalidad es la de
+generar archivos de instrucciones aleatorias. De esta manera se crean archivos de texto con el
+formato necesario para ser leído para las simulaciones. Estas instrucciones no son completamente
+aleatorias, sino que se organizan en ``mega clusters'' y ``clusters'' de instrucciones. Los ``mega
+clusters'' son grandes secuencias de direcciones aleatorias que pertenecen a un rango amplio para modelar el
+comportamiento de un programa. Por otra parte los clusters son secuencias cortas de instrucciones
+con direcciones cercanas, que modelan el comportamiento de funciones dentro de un programa. Los
+archivos generados se pueden utilizar por el script principal para luego hacer simulaciones, y
+tienen el objetivo de probar varios casos de entradas posibles, y también para ser utilizados en el
+análisis de misses y hits del sistema de caches. para cada caso se selecciona de forma aleatoria si
+se hace una lectura o una escritura. 
 
-Como en las instrucciones no se especifican los datos que el core debe escribir, cuando este debe
-escribir un dato, se genera una palabra aleatoria. De igual manera, cuando sucede un miss y se debe
-traer un dato de RAM, se genera un número aleatorio.
+\subsection{Script principal de simulación}
+Como se indicó con anterioridad el script principal de simulación puede hacer una o varias
+simulaciones. El proceso es muy parecido, solo que cuando hay varias simulaciones los archivos de
+entrada con las instrucciones para los cores se dividen en partes iguales y se pasan a cada
+simulación por aparte. En adelante ambos casos son equivalentes.
+
+Primero se realiza la lectura de los archivos, y se traducen del texto plano a una estructura de
+datos más fácil de manejar para Python. Cada línea del archivo se convierte en las entradas de una
+lista que contiene la dirección y si se trata de una lectura o una escritura. Además las
+direcciones se guardan como strings que representan al número en binario, y se le agregan tantos
+ceros al frente como sean necesarios para que tengan una tamaño mínimo específico. Esto se realiza
+para facilitar el manejo de los datos en las siguientes etapas de la simulación.
+
+
+Para poder emular la concurrencia que sucede en el sistema real se utilizan distintos procesos que
+se ejecutan en paralelo. Python ofrece una interfaz de mensajes para poder intercomunicar procesos,
+por lo que se utilizan a modo de puertos de comunicación. De esta manera, por ejemplo los datos que
+se piden de memoria llegan por un puerto, y las instrucciones que se envían a cache van en otro
+puerto distinto. Para una simulación se levantan 5 procesos, uno es el proceso de los cores estos se
+encargan de leer la lista de instrucciones descrita anteriormente y de comunicarse con los caches L1
+de manera apropiada. Luego está el proceso de cache L1, este se encarga de la simulación de ambos
+caches L1, y es donde se implementa el protocolo MESI. Otro proceso es el del cache L2, en este caso
+se implementa el cache de segundo nivel. Luego está el proceso de la memoria, este se encarga de
+simular el comportamiento de la memoria RAM en este sistema. Finalmente se tiene un quinto proceso
+que se encarga de recibir los datos de todos los anteriores y organizarlos para hacer impresiones en
+terminal con formato entendible y se encarga de generar los archivos de salida en caso que el
+usuario así lo solicite. Es importante destacar que este quinto proceso no es parte de la simulación
+de hardware, sino que es un proceso utilitario que permite la verificación del sistema con mayor
+facilidad.
+
+EN el script principal se crean todos los puertos de comunicación necesarios entre procesos. Los
+puertos de comandos desde los niveles superiores hacia los niveles inferiores, y los puertos de
+transferencia de datos se crean por aparte. Todos se organizan en un diccionario. Estos puertos y
+otros parámetros utilitarios son los que se utilizan para inicializar los 5 procesos descritos.
+
+Una simulación termina cuando ambos cores han terminado de ejecutar todas las instrucciones, en este
+caso el proceso de los cores genera una señal para indicarle al resto que deben terminar. El proceso
+de los cores termina automáticamente. Es en este momento que se hace el manejo de los estados
+finales de los caches.
+
+\subsection{Cores}
+
+El proceso de los cores recibe como entrada ambas listas de instrucciones. Luego itera sobre ellas
+sucesivamente hasta que ambas se hayan completado. En cada iteración uno de los cores envía las
+instrucciones a su respectivo cache L1. En caso de ser necesario genera datos aleatorios para
+enviarlos al cache, o espera a recibir los datos del cache. 
+
 
 \subsection{Cache L1}
-El módulo del cache L1 que crea un objeto tipo cacheL1 con los tamaños requeridos y los puertos de
-salida y entrada. Luego ejecuta el método que se encarga de escuchar las entradas y generar las
+El módulo del cache L1 que crea dos objeto tipo cacheL2w con los tamaños requeridos y los puertos de
+salida y entrada. Luego ejecuta los métodos que se encargan de escuchar las entradas y generar las
 salidas. Este método es un loop que se espera a recibir una instrucción del nivel superior, esta
-llega por el puerto de instrucciones. Cuando llega la instrucción verifica si es de escritura o si
-es de lectura y ejecuta según lo obtenido.
+llega por el puerto de instrucciones.
 
-Los miembros de la clase cacheL1 son los siguientes (se explican uno a uno):
+Los datos en cache se guardan en un diccionario, donde el identificador es un string con el index en
+binario, y este se asocia a un objeto tipo Block\_pair. Este objeto simula el comportamiento LRU del
+set (El cache es 2 way associative LRU). Cada Block\_pair contiene dos objetos tipo Block\_MESI que
+guardan los datos asociados al bloque y el tag, además se encargan de la transición de estados. 
+
+El proceso de ejecución de una instrucción se divide en dos partes generales. La primera parte se
+encarga del manejo de misses, y la segunda se encarga de la ejecución de la instrucción como
+tal. Entonces al recibir una instrucción, el cache toma las instrucciones y las divide en el tag, el
+index y el offset. Para esta parte es muy conveniente que se tomen las direcciones en formato
+binario, para facilitar la división de la instrucción. Luego se busca en el diccionario el bloque
+que contenga el tag requerido. En caso que no se encuentre se activa la bandera de miss y se ejecuta
+la función para manejo de misses.
+
+En la función de manejo de misses, primero se revisa el estado del bloque actual, encaso de estar en
+\textit{Modified} se hace un flush del bloque para mantener la coherencia entre el cacheL1 y el
+cache L2. Luego se busca el tag en el otro cache L1, para esto cada cache tiene un puntero al
+otro. En caso de encontrarse el tag, se trae el dato. Si el dato en el otro cache se encuentra en
+\textit{Modified} se hace flush, para garantizar coherencia y finalmente ambos bloques transicionan
+a \textit{Shared}. Si el tag no se encuentra en el otro cache L1, entonces se le envía una solicitud
+al cache L2 por el bloque, en este caso el bloque termina en \textit{Exclusive}. Nótese que todos
+los bloques inválidos levantan la bandera de miss.
+
+Una vez que se ha ejecutado la función de manejo de misses se ha asegurado que se tiene coherencia
+entre caches y con el cache L2. Además se garantiza que el bloque que se necesita se encuentra en el
+cache L1 apropiado. Luego se ejecuta la instrucción del core. En caso de ser una lectura se pasa el
+byte al cache por medio de un puerto. En caso de ser de escritura se toma el dato del puerto y se
+escribe en el bloque. Este pasa a ser \textit{Modified}, y en caso de estar en \textit{Shared}
+entonces se invalida la copia en el otro cache. Se debe notar que durante la ejecución de la
+instrucción el bloque puede cambiar varias veces de estado, esto porque el manejo de misses y la
+ejecución de instrucciones del core se hacen por separado.
+
+\subsubsection{Block pair}
+
+Como este es un cache two way set associative, entonces en cada entrada del diccionario de indexes en
+el cache se encuentran dos bloques. Cada vez que el core accesa datos de alguno de ellos (ni importa
+si es escritura o lectura), se le suma un contador al bloque correspondiente. Cuando los datos se
+accesan por parte de otro cache, este contador no se incrementa. Cuando se trae en bloque nuevo al
+cache, este inicia con el contador en 0. Estos contadores se utilizan para implementar LRU. Entonces
+en un miss cuando se solicita el bloque LRU para ser sustituido, se retorna el bloque con el
+contador menor valor.
+
+\subsubsection{Block MESI}
+
+Este es un objeto donde se implementa el protocolo MESI, en el sentido que se encarga de identificar
+las instrucciones que se le solicitan al bloque y hacer la transición apropiada de estados según lo
+define el protocolo. Además, la transición indica si es necesario realizar un Flush al nivel
+superior de caché.
+
+\subsection{CacheL2}
+
+El protocolo MESI fue creado par asegurar la coherencia de datos entre \textbf{2 o más} caches del
+mismo nivel. Como este cache es único, entonces no tiene sentido utilizar MESI. en su lugar se
+utilizan tres banderas que indican si el dato es inválido, es válido (coherente con memoria
+principal), o si está modificado (válido, pero distinto al dato en memoria). Este cache al igual que
+el anterior tiene una función que se ejecuta indefinidamente y está escuchando el puerto de comandos
+para saber cuando alguno de los cache L1 le hace una solicitud de un bloque o hace un flush de un
+bloque.
+
+Este cache se organiza como un diccionario, donde el identificador es un string con los indexes en
+representación binaria y se asocia a un objeto tipo bloque. Este objeto tipo bloque almacena los
+datos y el tag correspondiente. Sin embargo como la transición de estados es tan simple, esta se
+maneja por parte del cache, y no por parte del bloque.
+
+Cuando se recibe una instrucción del cache L1, primero se realiza la división de la dirección en
+tag, index y offset. Se debe notar que esta división es distinta a la que se tiene en cache
+L1. Además la parte del offset son solamente ceros, porque los bloques son del mismo tamaño. La
+ejecución de la instrucción también se divide en dos partes: el manejo de misses, y la ejecución de
+la instrucción como tal. En primer lugar se busca el tag correspondiente dentro del cache, si se
+encuentra se procede a ejecutar la instrucción, pero en caso contrario se ejecuta la función de
+manejo de misses.
+
+En la función de manejo de misses primero se hace flush del bloque actual a la memoria principal,si
+este se encuentra modificado, y
+luego se hace la solicitud a la memoria del bloque que necesita cache L1. Este dato se trae y se
+guarda en el cache L2, se asigna bandera de válido.
+
+En al parte de la ejecución de la instrucción recibida por parte del cache L1, en caso de ser de
+lectura se envían los datos del bloque, en caso de ser escritura, se toman los datos y se el asigna
+la bandera de modificado.
+
+\section{Memoria Principal}
+
+La memoria principal es un proceso que se encarga de simular el comportamiento de la memoria RAM en
+este sistema. Al igual que los caches se mantiene escuchando el puerto de comandos en espera que el
+nivel superior le haga una solicitud. Esta memoria tiene un diccionario, donde guarda la dirección
+asociada y la socia al dato (lista de 32 bytes).  Estos se generan en cada solicitud del cacheL2. En
+caso de haber una lectura, la memoria primero busca en el diccionario si ese dato ya está
+disponible y lo envía, si no lo está entonces crea uno aleatorio, lo guarda y lo envía. Si el
+comando es de escritura, busca si el dato ya está disponible y los modifica, si no, entonces crea
+una entrada nueva, y lo guarda.
+
+\section{Consideraciones sobre comandos}
+Se ha explicado que los niveles superiores envían comandos a los niveles inferiores. El ejemplo más
+claro es la relación entre el core y el cache L1. Este comando es una lista de dos elementos, el
+primero indica la dirección, y el segundo indica si es escritura o lectura. Entonces es parecido a
+este ejemplo: [``0101...101'', ``{S}'']. En caso que haya un miss, y se deba hacer un flush, entonces el
+cache L1 va a enviarle al cache L2 la siguiente instrucci\'o n: [``1001...000'', ``{S}''], para escribir
+el bloque a sustituir en L2. Y luego va a enviar [``0101...000'', ``{L}''], para leer el bloque
+correspondiente. Note que internamente todo se trabaja en binario, no hexadecimal, además escritura
+o lectura se indica encerrado en llaves. Por otra parte el offset que se trabaja del cacheL2 para
+abajo es siempre cero, porque estas transferencias son de bloques enteros. Las transferencias entre
+los cores y sus caches L1 son únicamente de bytes (para esta implementación las palabras son de un byte). 
+
+
 \section{Funcionamiento y Pruebas}
+\subsection{Verificación funcional del sistema}
+Para demostrar el funcionamiento del sistema implementado, se llevó a cabo una prueba diseñada para
+generar distintos casos de interacción entre cores, los caches L1, cache L2 y la memoria principal,
+de forma que se pudiera verificar si las transiciones de estados de MESI, el manejo de misses, las
+situaciones de flush y de invalidación, se dan de forma esperada. 
+
+Los archivos de instrucciones utilizados para este apartado se encuentran en la carpeta
+\texttt{scripts/tests/}, y se llaman \texttt{test1.txt} (core 1) y \texttt{test2.txt} (core
+2). Dichas instrucciones se muestran en la Tabla \ref{tab:func_test}, en donde estas se agruparon
+para visualizar que se ejecutan primero 3 instrucciones del core 1 (izquierda) y luego una
+instrucción del core 2 (derecha) para posteriormente repetir el mismo patrón con las siguientes.
+
+A continuación se procederá a darle seguimiento al estado del sistema a medida que se ejecutan las
+instrucciones. Esto mediante la impresión en el archivo de salida generado por el programa
+\texttt{main.py}, en donde se estableció la bandera \texttt{debug} para generar toda la información
+disponible. 
+
+Nota: En la discusión se utilizará L1(1) y L1(2) para indicar el cache L1 del core 1 y del core 2,
+respectivamente. De la misma forma se utilizará L2 para hace referencia al cache L2 y MEM para
+indicar la memoria principal. Por otra parte, cuando se mencionen los cores se utilizará la
+abreviación C(1) (core 1) y C(2) (core 2). Cabe destacar también que cuando se hace referencia a un
+bloque se utiliza la dirección del primer byte del mismo.
+
+\begin{table}[h]
+  \centering
+  \caption{Instrucciones para la prueba de funcionamiento}
+  \label{tab:func_test}
+  \begin{tabular}{|l|l|l|l|}
+    \hline
+    \multicolumn{2}{|c|}{\begin{tabular}[c]{@{}c@{}}Instrucciones\\ Core 1\end{tabular}} & \multicolumn{2}{|c|}{\begin{tabular}[c]{@{}c@{}}Instrucciones\\ Core 2\end{tabular}} \\
+    \hline
+    0x13EFA   & L   & 0x13EF2  & L  \\
+    0xD294C   & L   &  &  \\
+    0x12971   & S   &  &  \\ \hline
+    0x13EEA   & S   & 0x35140  & L  \\
+    0x13EEE   & L   &  &  \\
+    0x3514D   & S   &  &  \\ \hline
+    0x5514D   & L   & 0xA17FF  & L  \\
+    0x55141   & L   &  &  \\        
+    0x55155   & L   &  &  \\ \hline         
+    0xA17EF   & L   & 0xA17F0 & L \\         
+    0xA17E4   & S   &  &  \\         
+    0xA17E5   & S   &  &  \\ \hline      
+    Ox897E4   & S   & Ox897E3 & L \\     
+    0xB97E4   & L   &  &  \\        
+    0xB97F4   & L   &  &  \\
+    \hline
+  \end{tabular}
+\end{table}
+
+A continuación se presenta la salida al ejecutar la instrucción \texttt{0x13EFA L} en C(1). Tal como
+se muestra en este caso no se tiene la instrucción en L1(1) previamente (primera instrucción), por
+lo que dicho cache indica un MISS, de forma que se selecciona el bloque LRU (se toma por defecto el
+way 1) para sustituirlo. Luego se busca el bloque (indicado por el primer byte 013EE0) en L1(2)
+(mediante el bus), pero no se encuentra, por lo que es necesario traerlo de L2. Este bloque en L1(1)
+transiciona de estado de I a E, ya que va a ser el único en tener los datos del bloque. Se procede a
+solicitar el bloque a L2, lo que constituye un MISS para L2 por lo que este lo trae de MEM y el
+bloque en L2 transiciona de I a V (Valid). Luego se lee en L2 dicho bloque para pasarlo a L1(1), el
+cual lo lee (manteniéndose en el estado E) y luego lo transfiere a C(1), completando la lectura.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EFA.png} \end{centering}
+\\
+Para la siguiente instrucción, \texttt{0xD294C L} en C(1), se tiene la misma situación que para el caso
+anterior, en donde no se tiene el bloque en L1(1) y por lo tanto es necesario propagar la solicitud
+hasta memoria, habiendo un MISS en L1(1) y en L2. De la misma forma el bloque en L1(1) transiciona a
+E (exclusivo), ya que L1(2) no tiene dicho bloque. En este caso se puede notar como el set
+correspondiente para esta instrucción es distinto que para la instrucción anterior, lo cual se debe
+a los diferentes valores de index (el cual se compone de 8 bits por el tamaño de 16 KB para L1).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0D294C.png} \end{centering}
+\\
+En la siguiente instrucción, \texttt{0x12971 S} en C(1), antes de hacer la escritura se busca el dato pero
+ocurre un MISS, y no se encuentra el bloque en L1(2), por lo que es necesario traerlo de L2. El
+bloque por sustituirse en L1(1) (LRU) pasa temporalmente al estado E y L2 tiene un MISS por lo que
+trae el bloque de MEM, y el bloque a este nivel transiciona de I a V. Luego de traer el bloque de
+MEM y pasarlo a L1(1), se toma el dato por escribir de C(1) y se modifica el bloque, por lo que el
+mismo transiciona de E a M (Modified). 
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_012971.png} \end{centering}
+\\
+En esta instrucción, \texttt{0x13EF2 L} en C(2), L1(2) no tiene el bloque por lo que primero lo solicita al
+Bus, en donde L1(1) indica que sí lo tiene. Esto provoca que la línea en L1(2) transicione de I a S
+(Shared), y que el bloque correspondiente en L1(1) transicione de E a S. En seguida el dato traido
+de L1(1) es leído en L1(2) para enviarlo a C(2) (en esta operación de lectura se conserva el estado
+Shared).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_013EF2.png} \end{centering}
+\\
+En seguida para la instrucción \texttt{0x13EEA S} en C(1), el acceso de escritura en L1(1)
+corresponde a un HIT, ya que este es el mismo bloque con el que se trató en la instrucción anterior
+(que al final de la misma queda compartido). De esta forma se recibe el dato por escribir de C(1),
+se invalida el bloque en L1(2) (por lo que dicho bloque pasa de S a I) y el bloque local en L1(1)
+transiciona de S a M, tal como es de esperarse.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEA.png} \end{centering}
+\\
+Esta instrucción, \texttt{0x13EEE L} en C(1), corresponde a un HIT de lectura en L1(1), de forma que
+el estado del bloque se mantiene en M, y no es necesario hacer flush a L2 en este caso.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_013EEE.png} \end{centering}
+\\
+A continuación, en la instrucción \texttt{0x3514D S} en C(1), se tiene un MISS en L1(1) y el bloque
+no se encuentra en L1(2) (bus), por lo que se requiere traerlo de L2. De esta forma el bloque en
+L1(1) transiciona a E y se tiene un MISS en L2 por lo que se captura el bloque de MEM. Una vez se
+recibe el bloque en L1(1) se procede a escribir el dato brindado por C(1), de forma que el bloque
+transiciona de E a M.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_03514D.png} \end{centering}
+\\
+Para la instrucción siguiente, \texttt{0x35140 L} en C(2), ocurre en primer lugar un MISS en L1(2)
+por lo que se busca primero el bloque en L1(1) y se encuentra (bloque de la instrucción
+anterior). Esto causa que el bloque en L1(2) transicione de I a S y que el de L1(1) lo haga de M a
+S. Debido a que este último se encontraba en M, tal como se observa se genera una condición de
+Flush, de forma que se envía el bloque modificado a L2. Como dicho bloque ya estaba en L2, el mismo
+pasa de V a M, lo que indica que ya no es coherente con MEM. Por otro lado, L1(2) envía el dato a
+C(2), lo cual no genera una transición de estado debido a que es una lectura (el bloque se mantiene
+en S).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_035140.png} \end{centering}
+\\
+En la instrucción \texttt{0x5514D L} en C(1), lo notable es que se puede ver que se está accediendo
+al mismo set (138) que en la instrucción \texttt{0x3514D S} (también de C(1)). De esta manera, como
+se tiene un MISS se sustituye el LRU de la forma esperada, que en este caso es el way 2, por lo que
+la asociatividad permite no tener que reemplazar el bloque correspondiente a \texttt{0x3514D} en el
+way 1 (recientemente utilizado). Por otro lado, el resto de la instrucción corresponde a traer el
+bloque de L2, en donde se tiene un MISS y se debe traer entonces el dato de MEM. Sin embargo, el
+bloque correspondiente está modificado en L2, por lo que ocurre un Flush de L2 a MEM y la transición
+consecuente de M a V. Luego el bloque se envía a L1(1), en donde el mismo transiciona a E y se
+mantiene en dicho estado debido a la lectura.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_05514D.png} \end{centering}
+\\
+Esta instrucción, \texttt{0x55141 L} en C(1), corresponde a un HIT de lectura, por lo que el bloque
+se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_055141.png} \end{centering}
+\\
+Esta instrucción, \texttt{0x55155 L} en C(1), corresponde a un HIT de lectura, por lo que el bloque
+(mismo de la instrucción anterior) se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_055155.png} \end{centering}
+\\
+Para la instrucción siguiente, \texttt{0xA17FF L} en C(2), se tiene un MISS en L1(2) que no se logra
+resolver con L1(1), por lo que se requiere traer el dato de L2, que a su vez tiene un MISS por lo
+que se debe acceder a MEM. El bloque correspondiente en L1(2) transiciona de I a E y se trae el dato
+correspondiente desde los niveles superiores. Como la operación es una lectura dicho bloque se
+mantiene en E.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_0A17FF.png} \end{centering}
+\\
+En este caso, para la instrucción \texttt{0xA17EF L} en C(1), ocurre un MISS en L1(1) pero se tiene
+la situación en donde el bloque está en L1(2), por lo que ambos bloques transicionan a S. Como la
+operación es una lectura el bloque en L1(1) se mantiene en el estado compartido.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17EF.png} \end{centering}
+\\
+Esta instrucción, \texttt{0xA17E4 L} en C(1), corresponde a un HIT de escritura (mismo bloque de la
+instrucción previa), de forma que transiciona el bloque en L1(1) de S a M. Además, como se está
+modificando un bloque compartido se invalida la línea correspondiente en L1(2).
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17E4.png} \end{centering}
+\\
+Para esta instrucción, \texttt{0xA17E5 L} en C(1), se tiene un HIT de escritura en L1(1) (mismo
+bloque anterior, que se encuentra en M) de manera que se toma el bloque local y vuelve a modificar,
+de forma que el mismo se mantiene en el estado M
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0A17E5.png} \end{centering}
+\\
+En este caso, con la instrucción \texttt{0xA17F0 L} en C(2), se tiene un MISS porque este bloque ya
+se encontraba en L1(2) pero en la instrucción \texttt{0xA17E4 L} en C(1) (dos instrucciones atrás)
+fue invalidado, por lo que es necesario traerlo desde L1(1) (el cual está por las 3 instrucciones
+previas). Como este bloque en L1(1) se encontraba modificado es necesario entonces realizar un Flush
+hacia L2, y por otro lado realizar la transición de ambos bloques (en L1(1) y L1(2)) a S, tal como
+se observa. También, como el dato es leído por C(2) el bloque se mantiene en S.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c2_0A17F0.png} \end{centering}
+\\
+En este caso, para la instrucción \texttt{Ox897E4 S} en C(1) se tiene un MISS que se propaga hasta
+MEM (MISS en L2), habiendo una transición inicialmente de I a E en el bloque de L1(1). Como ocurre
+una escritura por parte de C(1), este bloque transiciona finalmente a M.
+\\
+\\
+\begin{centering} \includegraphics[width=0.85\textwidth]{images/c1_0897E4.png} \end{centering}
+\\
+En esta instrucción, \texttt{OxB97E4 S} en C(1), se tiene el mismo index que en caso anterior, y
+como el way 2 solo ha tenido un acceso (instrucción anterior) en comparación con el way 1
+(instrucciones \texttt{0xA17EF L}, \texttt{0xA17E4 L} y \texttt{0xA17E5 L}) el LRU corresponde al
+way 2. Por otra parte, se debe traer el bloque solicitado de L2 el cual tiene un MISS de manera que
+se requiere un acceso a MEM. Además, como la línea original (way 2) en L1(1) está en el estado M, se
+requiere hacer un Flush de este bloque (local) hacia L2. Finalmente, el bloque en L1(1)
+transiciona de M a E.
+\\
+\\
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97E4.png} \end{centering}
+\\
+En este caso, correspondiente a la instrucción \texttt{OxB97F4 S} en C(1), se tiene un HIT de
+lectura por lo que el bloque en L1(1) se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=\textwidth]{images/c1_0B97F4.png} \end{centering}
+\\
+Finalmente, para la instrucción \texttt{Ox897E3 S} en C(2), se tiene un MISS en L1(2) que no se
+resuelve con L1(1) por lo que se requiere acceder a L2, en donde se tiene un HIT de lectura de forma
+que el bloque en este nivel se mantiene en el estado M, y se envía el mismo a L1(2), en donde este a
+su vez lo envía a C(2) y por lo tanto se mantiene en el estado E.
+\\
+\\
+\begin{centering} \includegraphics[width=\textwidth]{images/c2_0897E3.png} \end{centering}
+
+
+De análisis extensivo realizado se puede afirmar que el sistema implementado funciona de forma
+correcta, ya que se comporta de forma esperada en la gran y diversa cantidad de casos estudiados.
+
+\subsection{Miss rate y Hit rate}
+
+Para analizar de manera sencilla las propiedades de este sistema, se hace una prueba donde se mide
+el miss rate y miss rate de cada nivel de cache. Para esto se generan dos archivos de instrucciones
+aleatorias con el siguiente comando: ``python2 main.py
+--generate\_random=100000,rnd.txt,100000,rnd2.txt''. Cada uno con 100000 instrucciones. Cabe destacar
+que estos archivos dentro contienen los clusters y mega clusters que se explicaron en la sección de
+implementación. 
+
+
+Para realizar las pruebas se ejecuta ``python2 main.py --core1\_file=rnd.txt --core2\_file=rnd2.txt
+--debug --ratio=1:1 --run\_n=10''. En caso de ejecutar esta prueba se debe tomar en cuenta que tuvo
+una duración aproximada de 52 minutos. De esta manera se ejecutan 10 pruebas con 9999 instrucciones cada
+una. Se obtiene que el miss rate total para el cache L1 es de 0.00365, que es incluso menor al 1\%
+. Esto indica que L1 es sumamente eficiente en el manejo de misses. En este caso el protocolo MESI
+no tiene ninguna contribución a disminuir tanto el miss rate, sino que esta disminución se logra por
+que el cache se implementa como 2-way set associative LRU. 
+
+En el cache L1 se mide la cantidad de misses que se
+resuelven buscando en el otro cache L1, y por separado la cantidad de misses que se resuelven
+pidiendo el dato a L2. Se tiene que el miss rate resuelto en el otro cache es de 0, mientras que el
+miss rate resuelto en L2 es 0.00365. Entonces la gran mayoría de misses se resuelven en el cache
+L2. Esto se debe a que en esta prueba aleatoria no existe localidad espacial entre cores, es decir
+ambos cores se encuentran operando con direcciones distantes, y por tanto los datos en los caches L1
+no son cercanos.
+
+Luego se debe tomar en cuenta también el miss rate de cache L2. Este tiene un miss rate de 1, lo que
+implica que la gran mayoría de las peticiones resultan en un miss. Esto se debe a que el tamaño del
+bloque del cache L1 y del cache L2 es el mismo, entonces la capacidad de manejar localidad espacial
+de ambos niveles del cache es sumamente similar. Entones los misses que ocurren en L1 porque no tiene
+suficiente manejo de localidad espacial, también van a suceder en cache L2. Por otra parte se debe
+tomar en cuenta que L2 debe manejar peticiones de ambos cache L1, que como ya se demostró trabajan
+con direcciones distintas, esta situación puede estar generando conflictos en L2, que le provoquen
+realizar flushes de sus datos a la memoria principal, y por tanto misses. Finalmente respecto a la
+localidad temporal, como el cache L1 es 2-way LRU podría tener hasta mejor localidad temporal que
+L2. L2 en lo único que es mejor que L1 es en su tamaño, por lo que puede contener más direcciones
+distantes, esto ayuda a evitar misses por conflicto.
+
+Por otra parte cuando se corre al simulación con los datos propuestos por el profesor, se obtienen
+resultados distintos. El miss rate de L1 total es de 0.247, que es peor que en el caso
+aleatorio. Por otra parte el miss rate que se soluciona en otro cache aumentó a 0.1095, lo que
+implica que alrededor del 10\% de instrucciones son misses que se resuelven en el otro cache, esto
+indica un mayor acople entre las instrucciones que ejecutan ambos cores. Luego
+el miss rate que se resuelve en L2, aumentó a 0.1375, entonces en general se tienen más accesos a L2
+que en el caso aleatorio. Finalmente el miss rate de L2 es mucho menor, para este caso es de 0.478,
+lo que implica que se aprovecha mejor la característica de L2 de ser más grande. 
 
 \section{Beneficios de MESI}
 
+El principal beneficio es que permite tener coherencia entre varios caches del mismo nivel, y con
+los caches del siguiente nivel, ya que esta es al razón por la que se creó este protocolo. El caché
+más básico únicamente tiene la bandera de invalid, esta bandera permite que no se envíen datos al
+core o a memoria que no tienen sentido.
+
+Sin embargo si el cache solamente tiene invalid, entonces se
+va a necesitar hacer un flush en cada miss, lo que incrementa el miss penalty. Para solucionar este
+problema se utiliza la bandera de Modified. De esta manera el sistema sabe cuando el dato en cache
+ha cambiado respecto al dato en la memoria del siguiente nivel, de manera que si no ha cambiado,
+cuando suceda un miss no se debe hacer el flush. Modified Permite asegurar coherencia con los
+siguientes niveles, y ayuda a disminuir el miss penalty.
+
+Por otra parte la bandera shared se utiliza para la coherencia de datos cuando se tienen dos o más
+caches en el mismo nivel. En el caso de que un dato compartido sea modificado se deben eliminar las
+copias del dato en los otros caches, para no permitirle a los otros cores accesar a datos
+erróneos. De esta manera se obtiene una sincronización entre los caches, y en caso que otro core
+necesite el valor modificado, entonces se toma desde el cache, y no es necesario pedirlo al
+siguiente nivel de cache.
+
+El problema con estas banderas es que constantemente se encuentran haciendo accesos al bus que
+interconecta los caches. Esto puede tener un efecto negativo en el miss penalty. Además a la hora de
+modificar un dato shared se debe buscaren el resto de caches para invalidar copias, por lo que se
+pueden tener efectos negativos en el hit time. Con la adición de la bandera exclusive, se pude
+resolver parte del problema, ya que se indica que los datos exclusive están únicamente en un cache y
+no es necesario buscarlos en los otros caches. Esto ahorra muchas transacciones en el bus. Cabe
+destacar que en las pruebas aleatorias los caches del nivel L1 casi no compartían datos, entonces casi
+no habían bloque sen estado shared.Por lo que en ese caso particular la bandera de Exclusive ayuda a
+aumentar mucho la eficiencia del sistema.
+
+En general el protocolo MESI, provee los beneficios que se espera de un protocolo de coherencia. La
+bandera I ayuda a que no se envíen al core o a memoria datos sin sentido. La bandera M ayuda a
+disminuir la cantidad de flushes, y por tanto a reducir el miss rate. La bandera S permite
+coherencia entre caches del mismo nivel, y finalmente la bandera E ayuda a disminuir los acceso al
+bus y por tanto ayudan a mejorar el miss rate y el hit time.
+
 \section{Deficiencias de MESI}
+
+MESI es un protocolo que permite de manera satisfactoria garantizar la coherencia de los datos. Sin
+embargo aun con el aditamento de la bandera de modified, suceden varios flushes que no son
+necesarios, principalmente con los bloques que se encuentran shared. Ya que al modificar un bloque
+en estado shared, se deben invalidar todas sus copias, lo que provoca que hayan posibles misses para
+otros cores. Entonces al modificar bloques en shared, se aumenta el miss rate del sistema. 
+
+Esta medida del protocolo MESI no toma en consideración si el dato se ha utilizado más en los otros
+caches (y por lo tanto probablemente se necesite nuevamente), tampoco permite sincronización dentro
+del mismo nivel de caches, sino que definitivamente se requiere de acceso al siguiente nivel de
+memoria para resolver los misses (el dato modified necesita flush, para ser enviado a otros
+caches). Entonces no solo se tiene un mal miss rate, sino también un mal miss penalty. MESI necesita
+mejorarse en el manejo de modificaciones a datos en shared.
 
 
 \end{document}

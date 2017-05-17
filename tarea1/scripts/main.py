@@ -210,8 +210,10 @@ def main(argv):
     instructions_list_core_2=get_addresses(core2_file)
 
     if simulation_quant==1:
-        noting=run_simulation(debug, instructions_list_core_1, instructions_list_core_2,
-                              core1_sprint, core2_sprint, output_file)
+
+        last_state=[run_simulation(debug, instructions_list_core_1, instructions_list_core_2,
+                              core1_sprint, core2_sprint, output_file)]
+        average=get_last_state_averages(last_state)
 
     else:
         #run many simulations at once. Fisrt divide the isntructions for every simulation

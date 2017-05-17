@@ -285,11 +285,11 @@ class Cache2w():
 
     def formated_final_state_text(self):
         f=self.final_state()
-        text="\n"+"+--+--"*15+"\n|L1 CACHE("+self.iden+") final state"
-        text+="\n| -> Miss rate (found in other cahce): "+str(f["Miss_rate_with_L1"])
-        text+="\n| -> Miss rate (Request to Cahce L2): "+str(f["Miss_rate_with_L2"])
-        text+="\n| -> Miss rate : "+str(f["Total_miss_rate"])
-        text+="\n| -> Hit rate: "+str(f["Hit_rate"])
+        text="\n"+"+--+--"*15+"\n|L1 CACHE("+self.iden+") Final Statistics:"
+        text+="\n| -> Miss Rate (Found in other L1 CACHE): "+str(f["Miss_rate_with_L1"])
+        text+="\n| -> Miss Rate (Request to L2 CACHE): "+str(f["Miss_rate_with_L2"])
+        text+="\n| -> Total Miss Rate: "+str(f["Total_miss_rate"])
+        text+="\n| -> Total Hit Rate: "+str(f["Hit_rate"])
         return text
         
         
@@ -343,7 +343,9 @@ def cacheL1(ports=None, debug=False, print_queue=None, sig_kill=None, last_state
     execution_loop(cache1, cache2, ports, sig_kill)
     last_state_port.send([cache1.final_state(), cache2.final_state()])
 
-    print_ln=cache1.formated_final_state_text()
+    print_ln="\n\n"+"="*90
+    print_ln+="\n|| FINAL CACHE STATISTICS"
+    print_ln+="\n"+"="*90
+    print_ln+=cache1.formated_final_state_text()
     print_ln+=cache2.formated_final_state_text()
     debug_print(print_ln, print_queue, debug)
-    

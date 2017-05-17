@@ -1,0 +1,50 @@
+# Copyright (c) 2017 
+# Authors: Daniel Garcia Vaglio, Esteban Zamora Alvarado
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>
+
+En esta seccion se encuentran los archivos fuente del proyecto. En main.py
+se implementa el script principal de simulación. Este tiene varias capacidades
+qeu se pueden controlar con argumentos a la hora de ejecutar el comando. Para
+un resumen se peude ejecutar python2 main.py --help
+
+
+Para ejecutar la simuolación propuesta en als instrucciones y guardar todo el output
+a un archivo de salida, se ejecuta:
+
+python2 main.py --debug --output_file=output.txt
+
+
+
+En block.py se implementan lso objetos para la simulación de lso bloques. El bloque MESI,
+el bloeu no MESI, apra el cache L2 y el block pair que se comporta como un set LRU.
+
+En core.py se implementa la función del core. Se encarga de leer las instruccioens
+y enviar los comandos correspondientes al resto de elementos.
+
+En cacheL1.py se implementa el cache L1, este es 2 way set associative. Tiene un
+proceso que se encarga de escuchar los comandos del core. EL objeto cache2w implementa
+la simulacion del hardware.
+
+EN cacheL2.py se implementa el cache L2, qeu no utiliza protocolo MESI
+
+En mem.py se implementa la memoria principal que funciona a modo de memroia RAM.
+
+En parser.py se encuentran las funciones para leer los archivos de instrucciones.
+
+En utils.py se encuentran varias fucniones utilitarias, como las que traducen direccioens de binario a hexadecimal y viceversa. También las que se utilizan apra gnerar números aleatorios, y la impresión del estado. 
+
+
+
+

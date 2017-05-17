@@ -76,6 +76,9 @@ public:
   void set_r(unsigned char val,int x, int y );
 
   void set_Mat(Mat* data);
+
+  //Compare if two images are tha same (pixel-wise)
+  bool compare(Image_wrapper* other);
   
 };
 
