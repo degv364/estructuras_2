@@ -30,6 +30,7 @@ def option_parser(argv):
     core1_sprint=3
     core2_sprint=1
     output_file = None
+    simulation_quant=1
     
     if "--debug" in argv:
         debug=True
@@ -55,6 +56,8 @@ def option_parser(argv):
         print "--core2_file=<file name>"+tab+"File where core2 instructions are taken from"+tab+"(Default is 'mem_trace_core2.txt')"
         print
         print "--output_file=<file name>"+tab+"File to store output"+tab+"(Default is to print output to terminal)"
+        print
+        print "--run_n=<integer>"+tab+"Run n simulations and get statistics about miss and hit rate"+tab+"Output file will be ignored"
         sys.exit(0)
         
         
@@ -76,9 +79,12 @@ def option_parser(argv):
             elif len(options)==4:
                 random_generator(int(options[0]), options[1], int(options[2]), options[3])
             sys.exit(0)
+        if "--run_n=" in argument:
+            options=argument.split("=")[1]
+            simulation_quant=int(options)
             
             
-    return [debug, core1_file, core2_file, core1_sprint, core2_sprint, output_file]
+    return [debug, core1_file, core2_file, core1_sprint, core2_sprint, output_file, simulation_quant]
 
 
 def print_fn(filename=None, print_queue=None, sig_kill=None):
@@ -97,13 +103,7 @@ def print_fn(filename=None, print_queue=None, sig_kill=None):
     
     
 
-def main(argv):
-    [debug, core1_file, core2_file, core1_sprint,core2_sprint, output_file]=option_parser(argv)
-    
-    #Get the instructions from files
-    instructions_list_core_1=get_addresses(core1_file)
-    instructions_list_core_2=get_addresses(core2_file)
-
+def run_simulation(debug=False, instructions_list_core_1=[], instructions_list_core_2=[], core1_sprint=3, core2_sprint=1, output_file=None):
     
     #Create the pipe connections (ports)
 
@@ -137,6 +137,8 @@ def main(argv):
 
     #------Port with sigkill, for last state storage---------
     [sig_kill_from_core, sig_kill]=Pipe(False)
+    [last_state_from_cacheL1, last_state_to_main]=Pipe()
+    [last_state_from_cacheL2, last_state_to_main2]=Pipe()
 
     
     #Parameters in dictionaries for each module
@@ -176,8 +178,8 @@ def main(argv):
     #Create the processes
     core_p = Process(target=core, args=(core_parameters, debug,
                                         core1_sprint, core2_sprint, print_queue, sig_kill)) #Instructions ratio core1:core2
-    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue, sig_kill_from_core))
-    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue, sig_kill_from_core))
+    cacheL1_p = Process(target=cacheL1, args=(cacheL1_parameters, debug, print_queue, sig_kill_from_core, last_state_from_cacheL1))
+    cacheL2_p = Process(target=cacheL2, args=(cacheL2_parameters, debug, print_queue, sig_kill_from_core, last_state_from_cacheL2))
     mem_p = Process(target=mem, args=(mem_parameters, debug, print_queue, sig_kill_from_core))
     print_p = Process(target=print_fn, args=(output_file, print_queue, sig_kill_from_core))
     
@@ -196,9 +198,36 @@ def main(argv):
     
     sleep(0.1)#really be sure, every process has terminated
     print_p.terminate()
-    
-    
-    
+    cacheL1_last_state=last_state_to_main.recv()
+    cacheL2_last_state=last_state_to_main2.recv()
+
+    return {"L1(1)":cacheL1_last_state[0], "L1(2)":cacheL1_last_state[1], "L2":cacheL2_last_state}
+
+def main(argv):
+    [debug, core1_file, core2_file, core1_sprint,core2_sprint, output_file, simulation_quant]=option_parser(argv)
+    #Get the instructions from files
+    instructions_list_core_1=get_addresses(core1_file)
+    instructions_list_core_2=get_addresses(core2_file)
+
+    if simulation_quant==1:
+        noting=run_simulation(debug, instructions_list_core_1, instructions_list_core_2,
+                              core1_sprint, core2_sprint, output_file)
+
+    else:
+        #run many simulations at once. Fisrt divide the isntructions for every simulation
+        partitioned_ins_list_core_1=partition_n(instructions_list_core_1, simulation_quant)
+        partitioned_ins_list_core_2=partition_n(instructions_list_core_2, simulation_quant)
+        last_states=[]
+        for sim in xrange(simulation_quant):
+            print "\n****************"*8
+            last_states.append(run_simulation(debug, partitioned_ins_list_core_1[sim],
+                                              partitioned_ins_list_core_2[sim],
+                                              core1_sprint, core2_sprint, None) )# no output file
+
+        print "\n\n"+"="*20+"\nFinished "+str(simulation_quant)+" simulations, with "+str(int(len(instructions_list_core_1)/simulation_quant))+" instructions each."
+        averages=get_last_state_averages(last_states)
+
+ 
 
 if __name__=="__main__":
     main(sys.argv)
