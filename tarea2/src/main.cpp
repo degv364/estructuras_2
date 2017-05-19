@@ -28,9 +28,6 @@ using namespace cv;
 using namespace std;
 
 int main(int argc, char** argv ){
-  //Primer argumento cant de threads, segundo tamano de la ventana
-  //Del tercer argumento en adelante se escriben los nombres de las
-  //imagenes que se desean analizar.
   vector<vector<double>> result_times;
   int image_cant;
   int cores=4, window_size=10;
@@ -60,8 +57,9 @@ int main(int argc, char** argv ){
   for (int img=0; img<image_cant; img++){
     cout<<"Filtrando "<<image_names[img]<<" ..."<<endl;
     result_times[img]=experiment(img, cores, window_size, image_names[img],
-				 show, save, compare);
-    
+				 show, save, core_path, compare);
+
+    auto n=get_speed_up(result_times[img]);
   }
   
   

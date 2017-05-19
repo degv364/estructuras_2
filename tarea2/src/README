@@ -3,7 +3,7 @@ cores: cantidad de cores a usar en el caso paralelo
 window_size: tamano de la ventana.
 show: si se muestran las imagenes o no
 save: si se guardan las imagenes o no
-core_path: si se ahce recorrido desde 1 core hasta 'cores' cores. FIXME: NOT IMPLEMENTED YET
+core_path: si se ahce recorrido desde 1 core hasta 'cores' cores.
 compare: si se deben comparar los resultados paralelos y secuenciales.
 
 Luego una lista de los nombres de las imagenes a filtrar.

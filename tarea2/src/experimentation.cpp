@@ -40,62 +40,107 @@ void save_images(string name, Mat* sec_mat, Mat* par_mat){
 }
 
 
+
 vector<double> experiment(int index, int cores, int window_size, string imageName,
-			  bool show, bool save, bool compare){
-  vector<double> result(2);
+			  bool show, bool save,bool core_path, bool compare){
   int interval; // intervalo para dividir la imagen
   mutex m; // FIXME: tal vez no sea necesario
   vector<thread> ths(cores); //vector con los threads
+  vector<double> times(2); //vector donde se guardan los resultados de tiempo
+  vector<Mat*> mats(2); //vector donde se guardan las matrices
+  vector<Image_wrapper*> images(2); //vector donde se guardan las imagenes
   double std_dev=3;
 
   //FIXME: utilizar constructor de copia para no tener que
   //estar abiendo imagenes, pero si se necesita que sean
   // Mats distintos
-
+  cout<<"entering experiment"<<endl;
+  //imagen de control
   Mat* control_mat = new Mat(imread(imageName, 1));
-  Mat* sec_mat = new Mat(imread(imageName, 1));
-  Mat* par_mat = new Mat(imread(imageName, 1));
-  Image_wrapper control(&m, control_mat); //imagen de control
-  Image_wrapper sec(&m, sec_mat); //imagen para operaciones secuenciales
-  Image_wrapper par(&m, par_mat); //imagen para operaciones paralelas
+  Image_wrapper control(&m, control_mat);
+  //imagen secuencial
+  mats[0]= new Mat(imread(imageName, 1));
+  images[0] = new Image_wrapper(&m, mats[0]);
+  //si necesario, crear las imagenes para cada cantidad de cores
+  if (core_path){
+    mats.resize(cores);
+    images.resize(cores);
+    for (int img=1; img<cores-1; img++){
+      mats[img]= new Mat(imread(imageName, 1));
+      images[img] = new Image_wrapper(&m, mats[img]);
+    }
+  }
+  //create image for fully parallel
+  mats.back()=new Mat(imread(imageName, 1));
+  images.back()= new Image_wrapper(&m, mats.back());
 
   //hacer la parte secuencial
   cout<<"Proceso secuencial..."<<endl;
   auto begin = chrono::high_resolution_clock::now();
-  gaussian_filter(&sec, &control, std_dev, 0, sec.get_width());
+  gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
   auto end = chrono::high_resolution_clock::now();
-  auto sequential_t=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
+  times[0]=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
-  //hacer la parte paralela
-  cout<<"Proceso paralelo..."<<endl;
-  interval=par.get_width()/cores;
+  if (core_path==true){
+    times.resize(cores);
+    //hacer el recorrrido por las cantidades de cores, en paralelo
+    for (int core_i=2; core_i<cores; core_i++){
+      cout<<"Proceso paralelo con "<<core_i<<" cores..."<<endl;
+      interval=images[core_i-1]->get_width()/core_i;
+      begin = chrono::high_resolution_clock::now();
+      for (int core=0; core<core_i; core++){
+	//a cada thread se le asigna una parte de la imagen
+	ths[core]=thread(&gaussian_filter, images[core_i-1], &control, std_dev, core*interval, (core+1)*interval);
+      }
+      for (int core=0; core<core_i; core++){
+	//esperar a la ejecuccion de todos
+	(ths[core]).join();
+      }
+      end = chrono::high_resolution_clock::now();
+      times[core_i-1]=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
+    }
+  }
+  
+  //hacer la parte paralela, contodos los cores
+  cout<<"Proceso paralelo con "<<cores<<" cores..."<<endl;
+  interval=images.back()->get_width()/cores;
   begin = chrono::high_resolution_clock::now();
   for (int core=0; core<cores; core++){
     //a cada thread se le asigna una parte de la imagen
-    ths[core]=thread(&gaussian_filter, &par, &control, std_dev, core*interval, (core+1)*interval);
+    ths[core]=thread(&gaussian_filter, images.back(), &control, std_dev, core*interval, (core+1)*interval);
   }
   for (int core=0; core<cores; core++){
     //esperar a la ejecuccion de todos
     (ths[core]).join();
   }
   end = chrono::high_resolution_clock::now();
-  auto parallel_t=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
+  times.back()=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
-  
+  //el procesamiento de varios cores es para obtener tiempos, entonces esta parte puede
+  //quedar igual
   if (show==true) {
     cout<<"Cierre las ventanas para continuar ..."<<endl;
-    show_images(index, control_mat, sec_mat, par_mat);
+    show_images(index, control_mat, mats[0], mats.back());
   }
   if (save==true) {
     cout<<"Guardando resultados ..."<<endl;
-    save_images(imageName, sec_mat, par_mat);
+    save_images(imageName, mats[0], mats.back());
   }
   if (compare==true){
     cout<<"Comparando ambos resultados ..."<<endl;
-    if (sec.compare(&par)) cout<<"Resultados iguales!"<<endl;
+    if (images[0]->compare(images.back())) cout<<"Resultados iguales!"<<endl;
     else cout<<"**ERROR**"<<endl;
   }
-  result[0]=sequential_t;
-  result[1]=parallel_t;
+
+  
+  return times;
+}
+
+vector<double> get_speed_up(vector<double> times){
+  vector<double> result(times.size());
+  for (unsigned int i=0; i<times.size(); i++){
+    result[i]=times[0]/times[i];
+    cout<<i+1<<" "<<result[i]<<endl;
+  }
   return result;
 }
