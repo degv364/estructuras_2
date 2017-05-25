@@ -270,7 +270,10 @@ instrucción del core 2 (derecha) para posteriormente repetir el mismo patrón c
 A continuación se procederá a darle seguimiento al estado del sistema a medida que se ejecutan las
 instrucciones. Esto mediante la impresión en el archivo de salida generado por el programa
 \texttt{main.py}, en donde se estableció la bandera \texttt{debug} para generar toda la información
-disponible. 
+disponible. A lo largo de este análisis, es importante considerar que debido al paralelismo de los
+procesos, el orden de la información (texto) dentro de cada instrucción de la salida puede variar
+levemente (con respecto a otra instrucción similar), ya que no se puede garantizar un orden de
+impresión completamente definido.
 
 Nota: En la discusión se utilizará L1(1) y L1(2) para indicar el cache L1 del core 1 y del core 2,
 respectivamente. De la misma forma se utilizará L2 para hace referencia al cache L2 y MEM para

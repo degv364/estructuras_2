@@ -1,20 +1,21 @@
-CFLAGS = -std=c++11 -Wall -c $(DEBUG) -pedantic -pthread `pkg-config --cflags --libs opencv`
-LFLAGS = -std=c++11 -Wall $(DEBUG) -pedantic -pthread `pkg-config --cflags --libs opencv`
-CC=g++
-TARGET=main.x
-SRC=image_wrapper.cpp experimentation.cpp
-OBJS=main.cpp image_wrapper.o experimentation.o
 
-all: $(TARGERT)
+CC := g++
+TARGET := main.x
+
+CFLAGS := -std=c++11 -Wall -c -pedantic -pthread `pkg-config --cflags opencv`
+LFLAGS := `pkg-config --libs opencv`
+
+SRC := $(wildcard *.cpp)
+OBJS := $(SRC:.cpp=.o)
+
+
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(LIBS) $(LFLAGS) $(OBJS) -o $(TARGET)	
+	$(CC) $(OBJS) $(LFLAGS) -o $(TARGET)	
 
-image_wrapper.o: $(SRC)
-	$(CC) $(CFLAGS) image_wrapper.cpp
-
-experimentation.o : $(SRC)
-	$(CC) $(CFLAGS) experimentation.cpp
+%.o: %.cpp
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm  *.o $(TARGET)
+	rm -rf *.o $(TARGET)
