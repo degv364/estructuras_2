@@ -22,46 +22,39 @@
 #include <thread>
 #include <vector>
 #include <stdlib.h>
+
+#include "utils.hh"
 #include "image_wrapper.hh"
 #include "experimentation.hh"
+
 using namespace cv;
 using namespace std;
 
 int main(int argc, char** argv ){
-  vector<vector<double>> result_times;
-  int image_cant;
-  int cores=4, window_size=10;
-  double std_dev=3;
-  vector<string> image_names(1);
-  bool show=false, save=false, core_path=false, compare=false;
-  image_names[0]="Highimgnoise.jpg";
-  if (argc>5){
-    cores= atoi(argv[1]);
-    window_size= atoi(argv[2]);
-    std_dev=window_size/2;
-    //if arg is 1, become true. 
-    show=     (1==atoi(argv[3]));
-    save=     (1==atoi(argv[4]));
-    core_path=(1==atoi(argv[5]));
-    compare=  (1==atoi(argv[6]));
-  }
-  if (argc>7){
-    //image names were specified
-    image_cant=argc-7;
-    image_names.resize(image_cant);
-    for (int i=0; i<image_cant; i++){
-      image_names[i]=string(argv[i+7]);
-    }
-  }
-  result_times.resize(image_cant);
-  for (int img=0; img<image_cant; img++){
-    cout<<"Filtrando "<<image_names[img]<<" ..."<<endl;
-    result_times[img]=experiment(img, cores, window_size, image_names[img],
-				 show, save, core_path, compare);
 
-    auto n=get_speed_up(result_times[img]);
-  }
+   vector<vector<double>> exec_time;
+  
+   Cmd_params cmd(argc, argv);
+   
+
+   exec_time.resize(cmd.image_count);
+
+   for (int img=0; img<cmd.image_count; img++){
+
+      cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
+      exec_time[img]=experiment(img,
+				cmd.cores,
+				cmd.window_size,
+				cmd.std_dev,
+				cmd.image_names[img],
+				cmd.show,
+				cmd.save,
+				cmd.core_increase,
+				cmd.compare);
+
+      auto n=get_speed_up(exec_time[img]);
+   }
   
   
-  return 0;
+   return 0;
 }

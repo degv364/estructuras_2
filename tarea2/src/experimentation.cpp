@@ -41,15 +41,15 @@ void save_images(string name, Mat* sec_mat, Mat* par_mat){
 
 
 
-vector<double> experiment(int index, int cores, int window_size, string imageName,
-			  bool show, bool save,bool core_path, bool compare){
+vector<double> experiment(int index, int cores, int window_size, double std_dev,
+			  string imageName, bool show, bool save, bool core_increase,
+			  bool compare){
   int interval; // intervalo para dividir la imagen
   mutex m; // FIXME: tal vez no sea necesario
-  vector<thread> ths(cores); //vector con los threads
+  vector<thread> threads(cores); //vector con los threads
   vector<double> times(2); //vector donde se guardan los resultados de tiempo
   vector<Mat*> mats(2); //vector donde se guardan las matrices
   vector<Image_wrapper*> images(2); //vector donde se guardan las imagenes
-  double std_dev=3;
 
   //FIXME: utilizar constructor de copia para no tener que
   //estar abiendo imagenes, pero si se necesita que sean
@@ -58,43 +58,62 @@ vector<double> experiment(int index, int cores, int window_size, string imageNam
   //imagen de control
   Mat* control_mat = new Mat(imread(imageName, 1));
   Image_wrapper control(&m, control_mat);
+
   //imagen secuencial
   mats[0]= new Mat(imread(imageName, 1));
   images[0] = new Image_wrapper(&m, mats[0]);
+
   //si necesario, crear las imagenes para cada cantidad de cores
-  if (core_path){
+  if (core_increase){
     mats.resize(cores);
     images.resize(cores);
-    for (int img=1; img<cores-1; img++){
+
+    for (int img=1; img < cores-1; img++){
       mats[img]= new Mat(imread(imageName, 1));
       images[img] = new Image_wrapper(&m, mats[img]);
     }
   }
+  
   //create image for fully parallel
   mats.back()=new Mat(imread(imageName, 1));
   images.back()= new Image_wrapper(&m, mats.back());
 
-  //hacer la parte secuencial
+  //------------------------------------------------------------------------
+  //Parte secuencial
+  //------------------------------------------------------------------------
+
   cout<<"Proceso secuencial..."<<endl;
   auto begin = chrono::high_resolution_clock::now();
   gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
   auto end = chrono::high_resolution_clock::now();
   times[0]=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
-  if (core_path==true){
-    times.resize(cores);
+
+  //------------------------------------------------------------------------
+  //Parte paralelizada incremental
+  //------------------------------------------------------------------------
+  
+  if (core_increase == true){
+
+     times.resize(cores);
     //hacer el recorrrido por las cantidades de cores, en paralelo
     for (int core_i=2; core_i<cores; core_i++){
       cout<<"Proceso paralelo con "<<core_i<<" cores..."<<endl;
       interval=images[core_i-1]->get_width()/core_i;
       begin = chrono::high_resolution_clock::now();
+
       for (int core=0; core<core_i; core++){
 	//a cada thread se le asigna una parte de la imagen
-	ths[core]=thread(&gaussian_filter, images[core_i-1], &control, std_dev, core*interval, (core+1)*interval);
+	threads[core] = thread(&gaussian_filter,
+			       images[core_i-1],
+			       &control,
+			       std_dev,
+			       core*interval,
+			       (core+1)*interval);
       }
       for (int core=0; core<core_i; core++){
 	//esperar a la ejecuccion de todos
-	(ths[core]).join();
+	(threads[core]).join();
       }
       end = chrono::high_resolution_clock::now();
       times[core_i-1]=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
@@ -107,11 +126,11 @@ vector<double> experiment(int index, int cores, int window_size, string imageNam
   begin = chrono::high_resolution_clock::now();
   for (int core=0; core<cores; core++){
     //a cada thread se le asigna una parte de la imagen
-    ths[core]=thread(&gaussian_filter, images.back(), &control, std_dev, core*interval, (core+1)*interval);
+    threads[core]=thread(&gaussian_filter, images.back(), &control, std_dev, core*interval, (core+1)*interval);
   }
   for (int core=0; core<cores; core++){
     //esperar a la ejecuccion de todos
-    (ths[core]).join();
+    (threads[core]).join();
   }
   end = chrono::high_resolution_clock::now();
   times.back()=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
