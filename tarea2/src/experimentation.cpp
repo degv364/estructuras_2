@@ -59,48 +59,28 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   Image_wrapper control(&m, control_mat);
 
   
-  //------------------------------------------------------------------------
-  //Parte secuencial
-  //------------------------------------------------------------------------
-
-  //Imagen secuencial  
-  core_num_time.push_back(make_pair(1,double()));
-  mats.push_back(new Mat(imread(imageName, 1)));
-  images.push_back(new Image_wrapper(&m, mats[0]));
-  
-  cout<<"Proceso secuencial..."<<endl;
   auto begin = chrono::high_resolution_clock::now();
+  auto end = begin;
 
-  gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
-
-  auto end = chrono::high_resolution_clock::now();
-  core_num_time[0].second =
-     chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
-
-
-  //------------------------------------------------------------------------
-  //Parte paralelizada
-  //------------------------------------------------------------------------
-
-  //Inicializar pruebas paralelizadas
-  for(int num_cores=2; num_cores <= cores; num_cores++){
-     if((num_cores<cores && core_increase) || (num_cores==cores)){
+  //Inicializar pruebas
+  for(int num_cores=1; num_cores <= cores; num_cores++){
+     if((num_cores<cores && core_increase) || (num_cores==1) || (num_cores==cores)){
 	core_num_time.push_back(make_pair(num_cores,double()));
      }
   }
   int num_tests = core_num_time.size();
 
   //FIXME: Change to smart_ptr and dont read image file
-  for (int img=1; img < num_tests; img++){ 
+  for (int img=0; img < num_tests; img++){ 
      mats.push_back(new Mat(imread(imageName, 1)));
      images.push_back(new Image_wrapper(&m, mats[img]));
   }
 
   
-  for (int test=1; test<num_tests; test++){
+  for (int test=0; test<num_tests; test++){
      int num_cores = core_num_time[test].first;
      
-     cout<<"Proceso paralelo con "<<num_cores<<" threads..."<<endl;
+     cout<<"Proceso con "<<num_cores<<" threads..."<<endl;
      interval = images[test]->get_width()/num_cores;
 
      begin = chrono::high_resolution_clock::now();
