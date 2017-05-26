@@ -41,7 +41,7 @@ void save_images(string name, Mat* sec_mat, Mat* par_mat){
 
 
 
-vector<double> experiment(int index, int cores, int window_size, double std_dev,
+vector<pair<int,double>> experiment(int index, int cores, int window_size, double std_dev,
 			  string imageName, bool show, bool save, bool core_increase,
 			  bool compare){
    
@@ -49,25 +49,24 @@ vector<double> experiment(int index, int cores, int window_size, double std_dev,
   mutex m; // FIXME: tal vez no sea necesario
 
   vector<thread> threads(cores); 
-  vector<double> times(2); //resultados de tiempo
-  vector<Mat*> mats(2); 
-  vector<Image_wrapper*> images(2);
+  vector<pair<int,double>> core_num_time;
 
-  //FIXME: utilizar constructor de copia para no tener que
-  //estar abiendo imagenes, pero si se necesita que sean Mats distintos
- 
+  vector<Mat*> mats; 
+  vector<Image_wrapper*> images;
+
   //Imagen de control
   Mat* control_mat = new Mat(imread(imageName, 1));
   Image_wrapper control(&m, control_mat);
 
-
+  
   //------------------------------------------------------------------------
   //Parte secuencial
   //------------------------------------------------------------------------
 
-  //Imagen secuencial
-  mats[0]= new Mat(imread(imageName, 1));
-  images[0] = new Image_wrapper(&m, mats[0]);
+  //Imagen secuencial  
+  core_num_time.push_back(make_pair(1,double()));
+  mats.push_back(new Mat(imread(imageName, 1)));
+  images.push_back(new Image_wrapper(&m, mats[0]));
   
   cout<<"Proceso secuencial..."<<endl;
   auto begin = chrono::high_resolution_clock::now();
@@ -75,86 +74,53 @@ vector<double> experiment(int index, int cores, int window_size, double std_dev,
   gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
 
   auto end = chrono::high_resolution_clock::now();
-  times[0]=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
+  core_num_time[0].second =
+     chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
-  
-  //------------------------------------------------------------------------
-  //Parte paralelizada incremental
-  //------------------------------------------------------------------------
-  
-  //si necesario, crear las imagenes para cada cantidad de cores
-  if (core_increase){
-     mats.resize(cores);
-     images.resize(cores);
 
-     for (int img=1; img < cores-1; img++){
-	mats[img]= new Mat(imread(imageName, 1));
-	images[img] = new Image_wrapper(&m, mats[img]);
+  //------------------------------------------------------------------------
+  //Parte paralelizada
+  //------------------------------------------------------------------------
+
+  //Inicializar pruebas paralelizadas
+  for(int num_cores=2; num_cores <= cores; num_cores++){
+     if((num_cores<cores && core_increase) || (num_cores==cores)){
+	core_num_time.push_back(make_pair(num_cores,double()));
      }
+  }
+  int num_tests = core_num_time.size();
 
-     times.resize(cores);
-     //hacer el recorrido por las cantidades de cores, en paralelo
-     for (int num_cores=2; num_cores<cores; num_cores++){
-	cout<<"Proceso paralelo con "<<num_cores<<" cores..."<<endl;
+  //FIXME: Change to smart_ptr and dont read image file
+  for (int img=1; img < num_tests; img++){ 
+     mats.push_back(new Mat(imread(imageName, 1)));
+     images.push_back(new Image_wrapper(&m, mats[img]));
+  }
 
-	interval = images[num_cores-1]->get_width()/num_cores;
+  
+  for (int test=1; test<num_tests; test++){
+     int num_cores = core_num_time[test].first;
+     
+     cout<<"Proceso paralelo con "<<num_cores<<" threads..."<<endl;
+     interval = images[test]->get_width()/num_cores;
 
-	begin = chrono::high_resolution_clock::now();
-
-	for (int core_id=0; core_id < num_cores; core_id++){
-	   //a cada thread se le asigna una parte de la imagen
-	   threads[core_id] = thread(&gaussian_filter,
-				  images[num_cores-1],
+     begin = chrono::high_resolution_clock::now();
+     for (int core_id=0; core_id < num_cores; core_id++){
+	//a cada thread se le asigna una parte de la imagen
+	threads[core_id] = thread(&gaussian_filter,
+				  images[test],
 				  &control,
 				  std_dev,
 				  core_id*interval,
 				  (core_id+1)*interval);
-	}
-
-	for (int core_id=0; core_id < num_cores; core_id++){
-	   threads[core_id].join();
-	}
-	
-	end = chrono::high_resolution_clock::now();
-
-	times[num_cores-1] = chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
      }
+     for (int core_id=0; core_id < num_cores; core_id++){
+	threads[core_id].join();
+     }
+     end = chrono::high_resolution_clock::now();
+
+     core_num_time[test].second =
+	chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
   }
-  
-  
-
-  //------------------------------------------------------------------------
-  //Parte paralelizada final (todos los threads)
-  //------------------------------------------------------------------------
-  
-  //Imagen paralelización final
-  mats.back() = new Mat(imread(imageName, 1));
-  images.back() = new Image_wrapper(&m, mats.back());
-
-  
-  cout<<"Proceso paralelo con "<< cores <<" cores..."<<endl;
-  interval=images.back()->get_width()/cores;
-
-  begin = chrono::high_resolution_clock::now();
-
-  for (int core_id=0; core_id < cores; core_id++){
-     //a cada thread se le asigna una parte de la imagen
-     threads[core_id]=thread(&gaussian_filter,
-			     images.back(),
-			     &control,
-			     std_dev,
-			     core_id*interval,
-			     (core_id+1)*interval);
-  }
-  
-  for (int core_id=0; core_id < cores; core_id++){
-     //esperar a la ejecucion de todos
-     threads[core_id].join();
-  }
-
-  end = chrono::high_resolution_clock::now();
-
-  times.back()=chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
 
   //------------------------------------------------------------------------
@@ -175,16 +141,17 @@ vector<double> experiment(int index, int cores, int window_size, double std_dev,
     else cout<<"Error: Resultados distintos"<<endl;
   }
   
-  return times;
+  return core_num_time;
 }
 
-vector<double> get_speed_up(vector<double> times){
-  vector<double> result(times.size());
 
-  for (unsigned int i=0; i<times.size(); i++){
-    result[i]=times[0]/times[i];
-    cout<<i+1<<" "<<result[i]<<endl;
-  }
 
-  return result;
+vector<double> get_speed_up(vector<pair<int,double>> core_num_time){
+   vector<double> result(core_num_time.size());
+
+   for (unsigned int test=0; test < core_num_time.size(); test++){
+      result[test]=core_num_time[0].second/core_num_time[test].second;
+      cout<<"Num_cores: "<<core_num_time[test].first<<" => Speedup: "<<result[test]<<endl;
+   }
+   return result;
 }

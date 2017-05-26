@@ -32,14 +32,14 @@ using namespace std;
 
 int main(int argc, char** argv ){
 
-   vector<vector<double>> exec_time;
-  
-   Cmd_params cmd(argc, argv);
+   vector<vector<pair<int,double>>> exec_time;
+   vector<double> speedup;
    
+   Cmd_params cmd(argc, argv);
 
    exec_time.resize(cmd.image_count);
 
-   for (int img=0; img<cmd.image_count; img++){
+   for (int img=0; img < cmd.image_count; img++){
 
       cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
       exec_time[img]=experiment(img,
@@ -52,9 +52,8 @@ int main(int argc, char** argv ){
 				cmd.core_increase,
 				cmd.compare);
 
-      auto n=get_speed_up(exec_time[img]);
+      speedup = get_speed_up(exec_time[img]);
    }
-  
   
    return 0;
 }
