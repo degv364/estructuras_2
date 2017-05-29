@@ -24,6 +24,8 @@
 
 using namespace std;
 
+//Clase para parseo de los argumentos de linea de comandos.
+
 class Cmd_parser{
 private:
    vector<string> input_vec;

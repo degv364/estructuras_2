@@ -144,8 +144,9 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   return core_num_time;
 }
 
-
-
+//-------------------------------------------------------------------------
+//Comparacion entre tiempo secuencial y paralelo
+//-------------------------------------------------------------------------
 vector<double> get_speed_up(vector<pair<int,double>> core_num_time){
    vector<double> result(core_num_time.size());
 

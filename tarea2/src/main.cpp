@@ -31,29 +31,31 @@ using namespace cv;
 using namespace std;
 
 int main(int argc, char** argv ){
-
-   vector<vector<pair<int,double>>> exec_time;
-   vector<double> speedup;
-   
-   Cmd_params cmd(argc, argv);
-
-   exec_time.resize(cmd.image_count);
-
-   for (int img=0; img < cmd.image_count; img++){
-
-      cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
-      exec_time[img]=experiment(img,
-				cmd.cores,
-				cmd.window_size,
-				cmd.std_dev,
-				cmd.image_names[img],
-				cmd.show,
-				cmd.save,
-				cmd.core_increase,
-				cmd.compare);
-
-      speedup = get_speed_up(exec_time[img]);
-   }
+  //vector donde se guardan los timepos de cada ejecucion
+  vector<vector<pair<int,double>>> exec_time;
+  //Relacion de velocidades
+  vector<double> speedup;
+  //obtencion de parametros
+  Cmd_params cmd(argc, argv);
   
-   return 0;
+  exec_time.resize(cmd.image_count);
+
+  //Iterar por todas las imagenes, apra ejecutar el experimento
+  for (int img=0; img < cmd.image_count; img++){
+    
+    cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
+    exec_time[img]=experiment(img,
+			      cmd.cores,
+			      cmd.window_size,
+			      cmd.std_dev,
+			      cmd.image_names[img],
+			      cmd.show,
+			      cmd.save,
+			      cmd.core_increase,
+			      cmd.compare);
+    
+    speedup = get_speed_up(exec_time[img]);
+  }
+  
+  return 0;
 }
