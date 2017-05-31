@@ -18,18 +18,44 @@
 
 \section{Filtro Gaussiano}
 
-El filtro gausiano es un filtro cuya respuesta al impulso es una funci\'o n gaussiana, esta est\'a
-definida por \ref{eq:gauss_fn}. Estos filtros son utilizados para el an\'alisis de im\'agenes, cuando
-se requiere comprimir im\'agenes, detectar bordes, o eliminar ruido. 
+El filtro gausiano es un filtro cuya respuesta al impulso es una función gaussiana, esta está
+definida por (\ref{eq:gauss_fn}). Estos filtros son utilizados para el análisis de imágenes, cuando
+se requiere comprimir imágenes, detectar bordes, o eliminar ruido. 
 
 \begin{equation}
-  \phi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
+  \varphi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
 \label{eq:gauss_fn}
 \end{equation}
 
+
+
 \section{Implementación}
 
+El programa adjunto computa imágenes filtradas, utilizando un filtro gaussiano, a partir de imágenes
+fuente. Además realiza análisis automáticos del ``speedup'' debido a la paralelización del
+algorítmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV. Cabe destacar que OpenCV
+solo se utiliza para cargar las imágenes y para mostrar los resultados, no se utiliza para hacer el
+filtrado, sino que el filtrado fue desarrollado enteramente por los estudiantes.
 
+\subsection{Image wraper}
+OpenCV para C++ ofrece una clase llamada Mat que carga imágenes de distintos formatos como una
+matriz $nxm$ (resolución en píxeles), donde cada entrada es un vector tridimensional donde se
+codifica el color (formato RGB). Para facilitar el manejo de esta clase, se crea un clase que
+funciona como interfaz de Mat. Esta se llama \textit{Image\_wrapper}. Para accesar a una celda de la
+matriz, OpenCV primero indexa la columna y luego la fila, esto no es el m[etodo natural, entonces
+Image\_wrapper hace los ajustes necesarios para que la imagen se recorra con fila columna.
+
+El filtro graussiano funciona haciendo cálculos en lo que se conoce como una ventana. Para cada
+pixel se debe calcular un nuevo valor (el valor filtrado). Este valor depende, en teoría, de todos
+los pixeles de la imagen, pero dependiendo de la desviación estándar requerida, los pixeles muy
+lejanos no tienen un aporte perceptible al nuevo valor. Entonces es posible no tomarlos en cuenta en
+los cálculos para acelerar el proceso, pero qeu el resultado final siga siendo el mismo. El conjunto
+de pixeles cercanos es conocido como ventana, y usualmente tiene una forma cuadrada. Se implementa
+una clase llamada \textit{neighbor}, que es una abstracción de la ventana. Esta clase calcula el
+nuevo valor (valor filtrado) del pixel en su centro, tomando en cuenta todos lso pixeles dentro del
+``vecindario'', además detecta cuando
+se encuentra cerca de los bordes de la imagen y se ajusta para no pedir valores inválidos en sus
+cálculos.
 
 
 \end{document}

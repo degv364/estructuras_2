@@ -35,7 +35,7 @@ int truncate_value(int target, int low_limit, int up_limit);
 //devuleve el valor en la distribucion de Gauss segun su ibcacion, y una dev_std
 double gauss(int x, int y, double dev_std);
 
-//clase que utiliza por dentro a Mat. basicamente para disminuir als instrucciones de tomar pixeles
+//clase que utiliza por dentro a Mat. basicamente para disminuir las instrucciones de tomar pixeles
 //y sus valores, y que 0,0 sea la esquina inferior izquierda, de manera que la imagen se comporte
 //como el primer cuadrante.
 class Image_wrapper{
