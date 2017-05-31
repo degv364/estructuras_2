@@ -1,15 +1,27 @@
-Para poder correr el main, se usan las siguientes opciones:
-cores: cantidad de cores a usar en el caso paralelo
-window_size: tamano de la ventana.
-show: si se muestran las imagenes o no
-save: si se guardan las imagenes o no
-core_path: si se ahce recorrido desde 1 core hasta 'cores' cores.
-compare: si se deben comparar los resultados paralelos y secuenciales.
+---------------------------------
+Ejecución del programa
+--------------------------------
 
-Luego una lista de los nombres de las imagenes a filtrar.
+Para poder ejecutar el programa (main.x), se utilizan los siguientes argumentos:
+--cores: Cantidad de cores a utilizar para la prueba paralelizada (por defecto = 4).
+--window_size: Tamaño de la ventana del filtro (valor por defecto = 10).
+--std_dev: Desviación estándar para el filtro gaussiano (por defecto = 3).
+--show: Indica si se muestran las imágenes procesadas por el programa o no (por defecto = Falso).
+--save: Indica si se guardan las imágenes procesadas por el programa en archivos (por defecto = Falso).
+--core_increase: Indica si se hacen las pruebas de paralelización incremental desde 1 core hasta 'cores' cores (por defecto = Falso).
+--compare: Indica si se deben comparar los resultados paralelos y secuenciales para ver si coinciden (por defecto = Falso).
+--img: Nombre de una imagen por procesar con el filtro gaussiano para las diferentes pruebas.
 
 
-Para correrlo: ./main.x 4 10 1 0 0 1 image1.jpg image2.jpg
+Por ejemplo, si se ejecuta el programa como:
 
-Va a utilizar 4 cores, una ventana de 10 pixeles, va a mostrar los datos, no va a guardar las imagenes, no va a recorrer todas las catidades de cores, y va acomparar si los resultados son iguales. Para cada imagen especificada.
+$ ./main.x --cores 4 --window_size 10 --show --core_increase --compare --img image1.jpg
+
+Esto indica que:
+-Se van a utilizar 4 cores para la prueba paralelizada.
+-Se tiene una ventana de 10 pixeles.
+-Se van a mostrar las imágenes.
+-No se van a guardar las imagenes.
+-Se van a realizar las pruebas de forma incremental (desde 1 hasta 4 cores).
+-Se va a comparar si los resultados son iguales.
 

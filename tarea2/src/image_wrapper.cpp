@@ -237,7 +237,7 @@ int truncate_value(int target, int low_limit, int up_limit){
 double gauss(int x, int y, double dev_std){
   const double pi = 3.1415926535897;
   double var=pow(dev_std, 2);
-  double den=1/(2*pi*var);
+  double den=1.0/(2*pi*var);
   double exponent=-((x^2)+ (y^2))/(2*var);
   return den*exp(exponent);
 }
