@@ -30,20 +30,26 @@
 using namespace cv;
 using namespace std;
 
+/* Función principal del programa en donde se itera por la lista de imágenes indicada para
+ * ejecutar el experimento en cada una de estas, el cual consiste en un conjunto de pruebas
+ * en donde se evalúa el filtro gaussiano para distintas cantidades de threads. 
+ */
+
 int main(int argc, char** argv ){
-  //vector donde se guardan los timepos de cada ejecucion
+  //Vector donde se guardan los tiempos de ejecución y la cantidad de threads de cada prueba
   vector<vector<pair<int,double>>> exec_time;
-  //Relacion de velocidades
+  //Vector para almacenar el Speedup para cada prueba
   vector<double> speedup;
-  //obtencion de parametros
+  //Obtención de los parámetros indicados por los argumentos de la terminal
   Cmd_params cmd(argc, argv);
   
   exec_time.resize(cmd.image_count);
 
-  //Iterar por todas las imagenes, apra ejecutar el experimento
+  //Iterar por todas las imágenes, para ejecutar el experimento  con cada una
   for (int img=0; img < cmd.image_count; img++){
     
     cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
+    //Ejecución del experimento con los parámetros indicados
     exec_time[img]=experiment(img,
 			      cmd.cores,
 			      cmd.window_size,
@@ -53,7 +59,8 @@ int main(int argc, char** argv ){
 			      cmd.save,
 			      cmd.core_increase,
 			      cmd.compare);
-    
+
+    //Se obtiene el Speedup para todas las pruebas de la imagen correspondiente
     speedup = get_speed_up(exec_time[img]);
   }
   

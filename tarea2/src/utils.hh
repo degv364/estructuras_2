@@ -24,30 +24,39 @@
 
 using namespace std;
 
-//Clase para parseo de los argumentos de linea de comandos.
-
+//Clase para el parseo de los argumentos de línea de comandos.
 class Cmd_parser{
 private:
+   //Vector de strings que contiene los argumentos dados ejecutar el programa
    vector<string> input_vec;
 
 public:
+   //Constructor de la clase Cmd_parser, que recibe el array de argumentos del main
    Cmd_parser(int& argc, char **argv);   
 
+   //Se obtiene el valor del parámetro indicado por el string flag
    string get_opt(const string& flag);
+   //Se obtiene el vector de parámetros indicados por el string flag
    vector<string> get_multiple_opt(const string& flag);
+   //Se indica si existe cierto argumento (string flag) en la lista de argumentos
    bool opt_exists(const string& flag);
 };
 
-
+/*Estructura para almacenar los parámetros obtenidos del parseo de la
+ * línea de comandos.
+ */
 struct Cmd_params{
 
+   //Parámetros de interés para la ejecución del experimento
    int image_count=1, cores=4, window_size=10;
    double std_dev=3;
    vector<string> image_names = vector<string>(1);
    bool show=false, save=false, core_increase=false, compare=false;
-   
+
+   //Instancia de Cmd_parser para obtener los argumentos de línea de comandos
    Cmd_parser cmd_parse;
-   
+
+   //Constructor de la estructura Cmd_params
    Cmd_params(int& argc, char **argv);
 };
 

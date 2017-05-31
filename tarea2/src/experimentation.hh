@@ -26,17 +26,22 @@
 #ifndef EXPERIMENTATION_H_
 #define EXPERIMENTATION_H_
 
-//Mostrar las imagenes generadas y la original
+/* Función que muestra la imagen original (control) y las generadas por el
+ * algoritmo (secuencial y paralelo)
+ */
+
 void show_images(int index, Mat* control_mat, Mat* sec_mat, Mat* par_mat);
 
-//Guardar las imagenes generadas
+//Función que guarda las imágenes generadas (secuencial y paralelo) en archivos
 void save_images(string name, Mat* sec_mat, Mat* par_mat);
 
-//Aplicar el filtro gaussiano de manera secuencial y paralela a una imagen
+//Función que aplica el filtro gaussiano a una imagen de manera secuencial y paralelizada
 vector<pair<int,double>> experiment(int index, int cores, int window_size, double std_dev,
 			  string imageName, bool show, bool save, bool core_path, bool compare);
 
-//Analisis de speedup
+/*Función que calcula la razón de tiempo de cada prueba con respecto a la 
+ * ejecución secuencial del algoritmo
+ */
 vector<double> get_speed_up(vector<pair<int,double>> times);
 
 #endif

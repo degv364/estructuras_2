@@ -45,16 +45,20 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 			  string imageName, bool show, bool save, bool core_increase,
 			  bool compare){
    
-  int interval; // intervalo para dividir la imagen
+  int interval; //Ancho de cada franja de la imagen asignada a un thread
   mutex m; // FIXME: tal vez no sea necesario
 
-  vector<thread> threads(cores); 
+  //Vector de threads para las pruebas paralelizadas
+  vector<thread> threads(cores);
+
+  //Vector que almacena el número de threads y el tiempo de ejecución por prueba
   vector<pair<int,double>> core_num_time;
 
+  //Vectores que almacenan la información asociada a las imágenes
   vector<Mat*> mats; 
   vector<Image_wrapper*> images;
 
-  //Imagen de control
+  //Imagen de control (original)
   Mat* control_mat = new Mat(imread(imageName, 1));
   Image_wrapper control(&m, control_mat);
 
@@ -69,11 +73,13 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   images.push_back(new Image_wrapper(&m, mats[0]));
   
   cout<<"Proceso secuencial..."<<endl;
-  auto begin = chrono::high_resolution_clock::now();
+  auto begin = chrono::high_resolution_clock::now(); //Inicio del tiempo de la prueba
 
   gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
 
-  auto end = chrono::high_resolution_clock::now();
+  auto end = chrono::high_resolution_clock::now(); //Fin del tiempo de la prueba
+
+  //Se guarda el tiempo de ejecución de la prueba secuencial
   core_num_time[0].second =
      chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
 
@@ -96,16 +102,16 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
      images.push_back(new Image_wrapper(&m, mats[img]));
   }
 
-  
+  //Se itera a lo largo de todas las pruebas (cada una con distinta cantidad de threads)
   for (int test=1; test<num_tests; test++){
      int num_cores = core_num_time[test].first;
      
      cout<<"Proceso paralelo con "<<num_cores<<" threads..."<<endl;
-     interval = images[test]->get_width()/num_cores;
+     interval = images[test]->get_width()/num_cores; //Se establece el ancho de cada franja
 
-     begin = chrono::high_resolution_clock::now();
+     begin = chrono::high_resolution_clock::now(); //Inicio del tiempo de la prueba
      for (int core_id=0; core_id < num_cores; core_id++){
-	//a cada thread se le asigna una parte de la imagen
+	//Ejecución del filtro gaussiano, a cada thread se le asigna una franja de la imagen
 	threads[core_id] = thread(&gaussian_filter,
 				  images[test],
 				  &control,
@@ -113,11 +119,13 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 				  core_id*interval,
 				  (core_id+1)*interval);
      }
+     //Se espera a que terminen de ejecutarse todos los threads para continuar
      for (int core_id=0; core_id < num_cores; core_id++){
 	threads[core_id].join();
      }
-     end = chrono::high_resolution_clock::now();
+     end = chrono::high_resolution_clock::now(); //Fin del tiempo de la prueba
 
+     //Se guarda el tiempo de ejecución para la prueba
      core_num_time[test].second =
 	chrono::duration_cast<chrono::nanoseconds>(end-begin).count();
   }
@@ -144,9 +152,6 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   return core_num_time;
 }
 
-//-------------------------------------------------------------------------
-//Comparacion entre tiempo secuencial y paralelo
-//-------------------------------------------------------------------------
 vector<double> get_speed_up(vector<pair<int,double>> core_num_time){
    vector<double> result(core_num_time.size());
 
