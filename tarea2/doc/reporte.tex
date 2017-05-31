@@ -57,5 +57,51 @@ nuevo valor (valor filtrado) del pixel en su centro, tomando en cuenta todos lso
 se encuentra cerca de los bordes de la imagen y se ajusta para no pedir valores inválidos en sus
 cálculos.
 
+\subsection{Algorítmo del filtro}
+
+Para calcular la imagen filtrada, se itera por cada uno de los pixeles (puede que en threads
+distintos) y se calcula el nuevo valor dados los pixeles en el ``vecindario''. Se definen dos
+imágenes, una es la imagen fuente, o source. Esta es una imagen de solo lectura. Y está la imagen de
+escritura, que es donde se guardan los valores nuevos. Esto se hace así para que conforme se van
+cambiando los valores de los pixeles, estos cambios no afecten los nuevos cálculos, sino que los
+valores filtrados se calculen todos con base en la imagen original. Sea $\sigma$ la desviación
+estándar requerida. Y la función de Gauss bidimensional se define por (\ref{eq:bidiGauss}).
+
+\begin{equation}
+  \varphi (x, y)= \frac{e^{-(x^2+y^2)/\sigma^2}}{2\pi \sigma^2} 
+  \label{eq:bidiGauss}
+\end{equation}
+
+En la sección \ref{sec:pseudocodePixel}, se muestra el pseudocódigo para obtener el nuevo valor en
+el pixel en la posición $(c_x, c_y)$. Este algoritmo se repite para cada pixel. La ejecución de este
+algoritmo se reparte en los threads de ejecución, para poder correrlo en paralelo, sin embargo esta
+repartición no se hace como parte del \textit{Image\_wrapper}, se explica más adelante.
+
+
+\subsubsection{Pseudocódigo para obtener nuevo valor en un píxel}
+\label{sec:pseudocodePixel}
+\begin{lstlisting}[escapeinside={<}{>}]
+  //imagen fuente
+  source
+  //imagen de escritura
+  target
+  ng = source.neighbor(<$c_x, c_y$>) //vecindario centrado en (<$c_x, c_y$>)
+  target[<$c_x,c_y$>]=(0,0,0)
+  for <$x$> in range(ng.x_start, ng.x_end):
+     for <$y$> in range(ng.y_start, ng.y_end):
+        <$d_x$>=<$x-c_x$> //distancia en x
+        <$d_y$>=<$y-c_y$>
+        gauss_val=<$\varphi(d_x, d_y)$> //calcular la funcion de gauss
+        total+=gauss_val
+        //calcular valores pesados con gauss
+        target[<$c_x,c_y$>].red  +=source[<$x,y$>].red*gauss_val 
+        target[<$c_x,c_y$>].green+=source[<$x,y$>].green*gauss_val
+        target[<$c_x,c_y$>].blue +=source[<$x,y$>].blue*gauss_val
+  target[<$c_x,c_y$>].red   /=total //dividir entre el total
+  target[<$c_x,c_y$>].green /=total
+  target[<$c_x,c_y$>].blue  /=total
+        
+\end{lstlisting}
+
 
 \end{document}
