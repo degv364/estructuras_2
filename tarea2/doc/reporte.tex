@@ -33,7 +33,7 @@ se requiere comprimir imágenes, detectar bordes, o eliminar ruido.
 
 El programa adjunto computa imágenes filtradas, utilizando un filtro gaussiano, a partir de imágenes
 fuente. Además realiza análisis automáticos del ``speedup'' debido a la paralelización del
-algorítmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV. Cabe destacar que OpenCV
+algoritmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV. Cabe destacar que OpenCV
 solo se utiliza para cargar las imágenes y para mostrar los resultados, no se utiliza para hacer el
 filtrado, sino que el filtrado fue desarrollado enteramente por los estudiantes.
 
@@ -42,17 +42,17 @@ OpenCV para C++ ofrece una clase llamada Mat que carga imágenes de distintos fo
 matriz $nxm$ (resolución en píxeles), donde cada entrada es un vector tridimensional donde se
 codifica el color (formato RGB). Para facilitar el manejo de esta clase, se crea un clase que
 funciona como interfaz de Mat. Esta se llama \textit{Image\_wrapper}. Para accesar a una celda de la
-matriz, OpenCV primero indexa la columna y luego la fila, esto no es el m[etodo natural, entonces
+matriz, OpenCV primero indexa la columna y luego la fila, esto no es el método natural, entonces
 Image\_wrapper hace los ajustes necesarios para que la imagen se recorra con fila columna.
 
 El filtro graussiano funciona haciendo cálculos en lo que se conoce como una ventana. Para cada
-pixel se debe calcular un nuevo valor (el valor filtrado). Este valor depende, en teoría, de todos
-los pixeles de la imagen, pero dependiendo de la desviación estándar requerida, los pixeles muy
+píxel se debe calcular un nuevo valor (el valor filtrado). Este valor depende, en teoría, de todos
+los píxeles de la imagen, pero dependiendo de la desviación estándar requerida, los pixeles muy
 lejanos no tienen un aporte perceptible al nuevo valor. Entonces es posible no tomarlos en cuenta en
-los cálculos para acelerar el proceso, pero qeu el resultado final siga siendo el mismo. El conjunto
-de pixeles cercanos es conocido como ventana, y usualmente tiene una forma cuadrada. Se implementa
+los cálculos para acelerar el proceso, pero que el resultado final siga siendo el mismo. El conjunto
+de píxeles cercanos es conocido como ventana, y usualmente tiene una forma cuadrada. Se implementa
 una clase llamada \textit{neighbor}, que es una abstracción de la ventana. Esta clase calcula el
-nuevo valor (valor filtrado) del pixel en su centro, tomando en cuenta todos lso pixeles dentro del
+nuevo valor (valor filtrado) del píxel en su centro, tomando en cuenta todos los píxeles dentro del
 ``vecindario'', además detecta cuando
 se encuentra cerca de los bordes de la imagen y se ajusta para no pedir valores inválidos en sus
 cálculos.
@@ -63,7 +63,7 @@ Para calcular la imagen filtrada, se itera por cada uno de los pixeles (puede qu
 distintos) y se calcula el nuevo valor dados los pixeles en el ``vecindario''. Se definen dos
 imágenes, una es la imagen fuente, o source. Esta es una imagen de solo lectura. Y está la imagen de
 escritura, que es donde se guardan los valores nuevos. Esto se hace así para que conforme se van
-cambiando los valores de los pixeles, estos cambios no afecten los nuevos cálculos, sino que los
+cambiando los valores de los píxeles, estos cambios no afecten los nuevos cálculos, sino que los
 valores filtrados se calculen todos con base en la imagen original. Sea $\sigma$ la desviación
 estándar requerida. Y la función de Gauss bidimensional se define por (\ref{eq:bidiGauss}).
 
@@ -75,7 +75,7 @@ estándar requerida. Y la función de Gauss bidimensional se define por (\ref{eq
 En la sección \ref{sec:pseudocodePixel}, se muestra el pseudocódigo para obtener el nuevo valor en
 el pixel en la posición $(c_x, c_y)$. Este algoritmo se repite para cada pixel. La ejecución de este
 algoritmo se reparte en los threads de ejecución, para poder correrlo en paralelo, sin embargo esta
-repartición no se hace como parte del \textit{Image\_wrapper}, se explica más adelante.
+repartición  se explica más adelante.
 
 
 \subsubsection{Pseudocódigo para obtener nuevo valor en un píxel}
@@ -102,6 +102,18 @@ repartición no se hace como parte del \textit{Image\_wrapper}, se explica más 
   target[<$c_x,c_y$>].blue  /=total
         
 \end{lstlisting}
+
+\subsection{Experimentation}
+
+Se tiene un grupo de funciones, que se agrupan como funciones de experimentación. Estas se encargan
+de computar, mostrar y analizar los resultados de las imágenes filtradas a parir de las imágenes
+fuente. De ellas la más importante es la función \textit{experiment}, que es la que se encarga de
+aplicar el algoritmo de filtrado en paralelo.
+
+
+\section{Pruebas realizadas}
+
+\section{Resultados experimentales}
 
 
 \end{document}
