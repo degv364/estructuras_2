@@ -109,6 +109,7 @@ Vec3b Image_wrapper::get_neighborhood_gauss(int cx, int cy, int r, double std_de
 
   double probe;
 
+  //Se recorre el vecindario para calcular el valor del filtro
   for (int nx=ng.get_x_start(); nx<ng.get_x_end(); nx++){
     for (int ny=ng.get_y_start(); ny<ng.get_y_end(); ny++){
       rx=nx-cx;
@@ -189,15 +190,16 @@ void neighborhood::set_parent(Image_wrapper* parent){
 }
 
 void neighborhood::set_area(int x, int y, int r){
-  //first check if there is a parent
+  //Se verifica si hay un image_wrapper válido asociado (parent)
   if (this->get_parent()!=0){
-    //check center is inside image
+     //Se verifica si el centro está dentro de la imagen
     if (0<=x && x<=this->get_parent()->get_width() &&
 	0<=y && y<=this->get_parent()->get_height()){
 
+      //Se calculan los límites del vecindario para que estén dentro de la imagen
       this->set_x_start(truncate_value(x-r, 0, this->get_parent()->get_width()));
-      this->set_y_start(truncate_value(y-r, 0, this->get_parent()->get_height()));
       this->set_x_end(truncate_value(x+r, 0, this->get_parent()->get_width()));
+      this->set_y_start(truncate_value(y-r, 0, this->get_parent()->get_height()));
       this->set_y_end(truncate_value(y+r, 0, this->get_parent()->get_height()));
     }
   }
@@ -242,10 +244,13 @@ double gauss(int x, int y, double dev_std){
 
 
 void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end){
-   int window_size= ceil(3*std_dev); //Ventana del filtro recomendada de 6std_dev x 6std_dev
+  int window_size = ceil(3*std_dev); //Ventana del filtro recomendada de 6std_dev x 6std_dev
   Vec3b gaussian;
+  
   if (target->get_cols()==source->get_cols() && target->get_rows()==source->get_rows()){
-    for (int x=start; x<=end; x++){
+     //Se calculan los valores de la imagen filtrada para la franja vertical indicada
+     //por los límites start y end 
+     for (int x=start; x<=end; x++){
       for (int y=0; y<target->get_height(); y++){
 	gaussian=source->get_neighborhood_gauss(x, y, window_size, std_dev);
 	target->set_b(gaussian.val[0], x, y);

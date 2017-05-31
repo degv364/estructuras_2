@@ -38,47 +38,57 @@ int truncate_value(int target, int low_limit, int up_limit);
  */
 double gauss(int x, int y, double dev_std);
 
+
 /* Clase que establece una interfaz con la matriz de la imagen para encapsular y simplificar 
  * el acceso a las regiones de la misma.
  */
 class Image_wrapper{
 private:
+  //Matrix que contiene los datos de la imagen asociada
   Mat* data;
+
+  //Devuelve el valor del color indicado en la posición (x,y)
   unsigned char get_color_value(int x, int y, int color);
+
+  //Establece el valor del color indicado en la posición (x,y)
   void set_color_value(unsigned char val, int x, int y, int color);
   
 public:
-  //Image_wrapper(mutex* m);
+  //Constructor de la clase Image_Wrapper que recibe la matriz de la imagen
   Image_wrapper(Mat* data);
 
   ~Image_wrapper(void);
 
+   
   Mat* get_data(void);
-  //esto retorna la cantidad de rows y columns
   int get_rows(void);
   int get_cols(void);
-  //returns height and width defined with the coordinate system for the wrappers
   int get_height(void);
   int get_width(void);
 
-  int get_neighborhood_area(int x, int y, int r); //retorna el area de un neighborhood del punto (x,y), y de
-					      //"radio" r. El lado del cuadrado es 2r.
+  //Retorna el área de un vecinario del punto (x,y) de "radio" r (lado del cuadrado es 2r)
+  int get_neighborhood_area(int x, int y, int r); 
+					      
   
-
-  unsigned char get_b(int x,int y);// value of the color at the x,y coordinate
+  //Funciones que retornan los componentes R, G y B de cierto pixel en la imagen 
+  unsigned char get_b(int x,int y);
   unsigned char get_g(int x,int y);
   unsigned char get_r(int x,int y);
 
+  //Se retorna la salida del filtro para cierto pixel (vecindario indicado por r)
+  Vec3b get_neighborhood_gauss(int cx, int cy, int r, double std_dev); 
 
-   Vec3b get_neighborhood_gauss(int cx, int cy, int r, double std_dev); //return the gauss-average of the neighborhood
-
+  //Establece los valores de los colores para cierto pixel (R, G y B)
   void set_b(unsigned char val,int x, int y );
   void set_g(unsigned char val,int x, int y );
   void set_r(unsigned char val,int x, int y );
 
+  //Se establece la matriz asociada a la imagen
   void set_Mat(Mat* data);
 
-  //Compare if two images are tha same (pixel-wise)
+ /* Se compara si la matriz asociada al Image_Wrapper es igual pixel por pixel
+  * a la matriz de otra imagen
+  */  
   bool compare(Image_wrapper* other);
   
 };
@@ -100,23 +110,29 @@ public:
   neighborhood(void);
   neighborhood(int x, int y, int r, Image_wrapper* parent);
 
-  //Image wrapper que representa la imagen a la cual está asociada el vecindario
+  //Image_wrapper que representa la imagen a la cual está asociada el vecindario
   Image_wrapper* get_parent(void);
 				  
+  //Calcula el área del vecindario
+  int get_area(void); 
 
-  int get_area(void); //calcula el area
-  
+  //Funciones que retornan los límites del vecindario
   int get_x_start(void);
   int get_y_start(void);
   int get_y_end(void);
   int get_x_end(void);
 
   void set_parent(Image_wrapper* parent);
-  void set_area(int x, int y, int r); //x,y position of the center and radius r
+
+  //Se establece la región del vecindario a partir del centro (x,y) y el radio indicado (r)
+  void set_area(int x, int y, int r); 
   
 };
 
-//Apply the gaussian filter
+/* Función que aplica el filtro gaussiano a una franja de la imagen "source", y almacena 
+ * su resultado en "target". Se debe indicar la desviación estándar del filtro y los 
+ * límites de la franja vertical sobre la cual opera el filtro (start y end).
+ */
 void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end);
 
 #endif
