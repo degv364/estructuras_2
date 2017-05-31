@@ -20,13 +20,12 @@
 using namespace std;
 using namespace cv;
 
-//IMAGE WRAPPER***********************************************************************************
-Image_wrapper::Image_wrapper(mutex* m){
-  this->m=m;
-}
 
-Image_wrapper::Image_wrapper(mutex* m, Mat* data){
-  this->m=m;
+//---------------------------------------------------------------
+//Implementación de la clase Image_wrapper
+//---------------------------------------------------------------
+
+Image_wrapper::Image_wrapper(Mat* data){
   this->set_Mat(data);
 }
 
@@ -88,50 +87,25 @@ void Image_wrapper::set_r(unsigned char val, int x, int y){
 
 void Image_wrapper::set_color_value(unsigned char val, int x, int y, int color){
   int y_t=(this->get_height())-y-1;
-  this->m->lock();
   this->get_data()->at<Vec3b>(y_t,x).val[color]=val;
-  this->m->unlock();
 }
 
 void Image_wrapper::set_Mat(Mat* data){
-  this->m->lock();
   this->data=data;
-  this->m->unlock();
 }
 
-int Image_wrapper::get_neighbor_area(int x, int y, int r){
-  neighbor ng(x, y, r, this);
+int Image_wrapper::get_neighborhood_area(int x, int y, int r){
+  neighborhood ng(x, y, r, this);
   return ng.get_area();
 }
 
-Vec3b Image_wrapper::get_neighbor_mean(int x, int y, int r){
-  //work with doubles to minimize errors
-  neighbor ng(x, y, r, this);
-  double result[3]={0,0,0};
-  double area= (double) ng.get_area();
-  Vec3b uchar_result;
-  
-  for (int xs=ng.get_x_start(); xs<ng.get_x_end(); xs++){
-    for (int ys=ng.get_y_start(); ys<ng.get_y_end(); ys++){
-      result[0]+=(( (double) this->get_color_value(xs,ys,0))/area);
-      result[1]+=(( (double) this->get_color_value(xs,ys,1))/area);
-      result[2]+=(( (double) this->get_color_value(xs,ys,2))/area);
-    }
-  }
-  uchar_result.val[0]=(unsigned char) result[0];
-  uchar_result.val[1]=(unsigned char) result[1];
-  uchar_result.val[2]=(unsigned char) result[2];
-  return uchar_result;
-}
 
-Vec3b Image_wrapper::get_neighbor_gauss(int cx, int cy, int r, double std_dev){
-  //work with doubles to minimize errors
-  neighbor ng(cx,cy,r, this);
+Vec3b Image_wrapper::get_neighborhood_gauss(int cx, int cy, int r, double std_dev){
+  neighborhood ng(cx,cy,r, this);
   double result[3]={0,0,0};
   double gauss_val;
-  double area= (double) ng.get_area();
   Vec3b uchar_result;
-  int rx, ry; //relative x,y position respect to center at cx, cy
+  int rx, ry; //Posición relativa (x,y) con respecto al centro (cx,cy)
 
   double probe;
 
@@ -156,11 +130,11 @@ bool Image_wrapper::compare(Image_wrapper* other){
   if (this->get_width()==other->get_width() &&
       this->get_height()==other->get_height()){
     
-    for (int x=0; x<this->get_width(); x++){
-      for (int y=0; y<this->get_height(); y++){
-	if (this->get_r(x,y)!=other->get_r(x,y)) return false;
-	if (this->get_g(x,y)!=other->get_g(x,y)) return false;
-	if (this->get_b(x,y)!=other->get_b(x,y)) return false;
+    for (int x = 0; x < this->get_width(); x++){
+      for (int y = 0; y < this->get_height(); y++){
+	if (this->get_r(x,y) != other->get_r(x,y)) return false;
+	if (this->get_g(x,y) != other->get_g(x,y)) return false;
+	if (this->get_b(x,y) != other->get_b(x,y)) return false;
       }
     }
   }
@@ -169,10 +143,11 @@ bool Image_wrapper::compare(Image_wrapper* other){
 }
 
 
+//---------------------------------------------------------------
+//Implementación de la clase neighborhood
+//---------------------------------------------------------------
 
-
-//NEIGHBOR******************************************************************
-neighbor::neighbor(void){
+neighborhood::neighborhood(void){
   this->x_start=0;
   this->y_start=0;
   this->x_end=0;
@@ -180,40 +155,40 @@ neighbor::neighbor(void){
   this->parent=0;
 }
 
-neighbor::neighbor(int x, int y, int r, Image_wrapper* parent){
+neighborhood::neighborhood(int x, int y, int r, Image_wrapper* parent){
   this->set_parent(parent);
   this->set_area(x,y,r);
 }
 
-Image_wrapper* neighbor::get_parent(void){
+Image_wrapper* neighborhood::get_parent(void){
   return parent;
 }
 
-int neighbor::get_area(void){
+int neighborhood::get_area(void){
   return (this->get_x_end()-this->get_x_start())*(this->get_y_end()-get_y_start());
 }
 
-int neighbor::get_x_start(void){
+int neighborhood::get_x_start(void){
   return this->x_start;
 }
 
-int neighbor::get_x_end(void){
+int neighborhood::get_x_end(void){
   return this->x_end;
 }
 
-int neighbor::get_y_start(void){
+int neighborhood::get_y_start(void){
   return this->y_start;
 }
 
-int neighbor::get_y_end(void){
+int neighborhood::get_y_end(void){
   return this->y_end;
 }
 
-void neighbor::set_parent(Image_wrapper* parent){
+void neighborhood::set_parent(Image_wrapper* parent){
   this->parent=parent;
 }
 
-void neighbor::set_area(int x, int y, int r){
+void neighborhood::set_area(int x, int y, int r){
   //first check if there is a parent
   if (this->get_parent()!=0){
     //check center is inside image
@@ -228,23 +203,25 @@ void neighbor::set_area(int x, int y, int r){
   }
 }
 
-void neighbor::set_x_start(int x){
+void neighborhood::set_x_start(int x){
   this->x_start=x;
 }
 
-void neighbor::set_x_end(int x){
+void neighborhood::set_x_end(int x){
   this->x_end=x;
 }
 
-void neighbor::set_y_start(int y){
+void neighborhood::set_y_start(int y){
   this->y_start=y;
 }
 
-void neighbor::set_y_end(int y){
+void neighborhood::set_y_end(int y){
   this->y_end=y;
 }
 
-//INDEPENDENT FUNCTIONS*********************************************************
+//---------------------------------------------------------------
+//Funciones independientes
+//---------------------------------------------------------------
 
 int truncate_value(int target, int low_limit, int up_limit){
   if (up_limit>low_limit){
@@ -263,28 +240,14 @@ double gauss(int x, int y, double dev_std){
   return den*exp(exponent);
 }
 
-void median_filter(Image_wrapper* target, Image_wrapper* source, int window_size, int start, int end){
-  //chack same size
-  Vec3b mean;
-  if (target->get_cols()==source->get_cols() && target->get_rows()==source->get_rows()){
-    for (int x=start; x<=end; x++){
-      for (int y=0; y<target->get_height(); y++){
-	mean=source->get_neighbor_mean(x,y,window_size);
-	target->set_b(mean.val[0], x, y);
-	target->set_g(mean.val[1], x, y);
-	target->set_r(mean.val[2], x, y);
-      }
-    }
-  }
-}
 
 void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end){
-  int window_size=ceil(3*std_dev); //recomended convolution matrix of 6std_dev x 6std_dev
+   int window_size= ceil(3*std_dev); //Ventana del filtro recomendada de 6std_dev x 6std_dev
   Vec3b gaussian;
   if (target->get_cols()==source->get_cols() && target->get_rows()==source->get_rows()){
     for (int x=start; x<=end; x++){
       for (int y=0; y<target->get_height(); y++){
-	gaussian=source->get_neighbor_gauss(x,y,window_size, std_dev);
+	gaussian=source->get_neighborhood_gauss(x, y, window_size, std_dev);
 	target->set_b(gaussian.val[0], x, y);
 	target->set_g(gaussian.val[1], x, y);
 	target->set_r(gaussian.val[2], x, y);

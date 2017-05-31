@@ -28,26 +28,28 @@ using namespace cv;
 #ifndef WRAPPER
 #define WRAPPER
 
-//devuelve un entero que no se pase de lso limites, en caso de estar dentro, devuelve a wrapper, si
-//esta afuera, devuelve el limite
+/* Función que devuelve un entero que no se pase de los límites, en caso de estar dentro 
+ * se devuelve el entero original, si está afuera devuelve el límite (inferior o superior)
+ */
 int truncate_value(int target, int low_limit, int up_limit);
 
-//devuleve el valor en la distribucion de Gauss segun su ibcacion, y una dev_std
+/* Función que devuelve el valor en la distribución de Gauss según su ubicación 
+ * y la desviación estándar
+ */
 double gauss(int x, int y, double dev_std);
 
-//clase que utiliza por dentro a Mat. basicamente para disminuir las instrucciones de tomar pixeles
-//y sus valores, y que 0,0 sea la esquina inferior izquierda, de manera que la imagen se comporte
-//como el primer cuadrante.
+/* Clase que establece una interfaz con la matriz de la imagen para encapsular y simplificar 
+ * el acceso a las regiones de la misma.
+ */
 class Image_wrapper{
 private:
-  mutex* m;//this mutex is not required for median filter, but maybe it is required for the gausian...
   Mat* data;
   unsigned char get_color_value(int x, int y, int color);
   void set_color_value(unsigned char val, int x, int y, int color);
   
 public:
-  Image_wrapper(mutex* m);
-  Image_wrapper(mutex* m, Mat* data);
+  //Image_wrapper(mutex* m);
+  Image_wrapper(Mat* data);
 
   ~Image_wrapper(void);
 
@@ -59,19 +61,18 @@ public:
   int get_height(void);
   int get_width(void);
 
-  int get_neighbor_area(int x, int y, int r); //retorna el area de un neighbor del punto (x,y), y de
-					      //"radio" r. No es un radio, pero el lado del cuadrado
-					      //es 2r.
+  int get_neighborhood_area(int x, int y, int r); //retorna el area de un neighborhood del punto (x,y), y de
+					      //"radio" r. El lado del cuadrado es 2r.
   
 
   unsigned char get_b(int x,int y);// value of the color at the x,y coordinate
   unsigned char get_g(int x,int y);
   unsigned char get_r(int x,int y);
 
-  Vec3b get_neighbor_mean(int x, int y, int r); //return vec with the average of the neighbor
-  Vec3b get_neighbor_gauss(int cx, int cy, int r, double std_dev); //return the gauss-average of the neighbor
 
-  void set_b(unsigned char val,int x, int y );//value of the colot at x,y
+   Vec3b get_neighborhood_gauss(int cx, int cy, int r, double std_dev); //return the gauss-average of the neighborhood
+
+  void set_b(unsigned char val,int x, int y );
   void set_g(unsigned char val,int x, int y );
   void set_r(unsigned char val,int x, int y );
 
@@ -82,10 +83,11 @@ public:
   
 };
 
-//define a un vecindario al rededor de un punto. es inteligente  en el sentido que sus bordes lso
-//define de manera que siempre retorne cosas dentro de la imagen
-
-class neighbor{
+/* Clase que define a un vecindario alrededor de un punto de la imagen. Es inteligente en el 
+ * sentido de que sus extremos los define de manera que siempre retorne regiones dentro de 
+ * la imagen.
+ */
+class neighborhood{
 private:
   int x_start, y_start;
   int x_end, y_end;
@@ -95,11 +97,12 @@ private:
   void set_x_end(int x);
   void set_y_end(int y);
 public:
-  neighbor(void);
-  neighbor(int x, int y, int r, Image_wrapper* parent);
+  neighborhood(void);
+  neighborhood(int x, int y, int r, Image_wrapper* parent);
 
-  Image_wrapper* get_parent(void);//se llama parent porque el neighbor esta siempre asociado a algun
-				  //wrapper, pero esto no es herencia
+  //Image wrapper que representa la imagen a la cual está asociada el vecindario
+  Image_wrapper* get_parent(void);
+				  
 
   int get_area(void); //calcula el area
   
@@ -112,11 +115,8 @@ public:
   void set_area(int x, int y, int r); //x,y position of the center and radius r
   
 };
-//Apply to every point in the range defined by start->end the average of the values in the
-//neighbor. target and source must be two different wrappers. Window size defines radius r
-void median_filter(Image_wrapper* target, Image_wrapper* source, int window_size, int start, int end);
 
-//Aply the gaussian filter
+//Apply the gaussian filter
 void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end);
 
 #endif

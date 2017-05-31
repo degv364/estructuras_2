@@ -46,7 +46,6 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 			  bool compare){
    
   int interval; //Ancho de cada franja de la imagen asignada a un thread
-  mutex m; // FIXME: tal vez no sea necesario
 
   //Vector de threads para las pruebas paralelizadas
   vector<thread> threads(cores);
@@ -60,7 +59,7 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 
   //Imagen de control (original)
   Mat* control_mat = new Mat(imread(imageName, 1));
-  Image_wrapper control(&m, control_mat);
+  Image_wrapper control(control_mat);
 
   
   //------------------------------------------------------------------------
@@ -69,12 +68,13 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 
   //Imagen secuencial  
   core_num_time.push_back(make_pair(1,double()));
-  mats.push_back(new Mat(imread(imageName, 1)));
-  images.push_back(new Image_wrapper(&m, mats[0]));
+  mats.push_back(new Mat(control_mat->rows, control_mat->cols, control_mat->type()));
+  images.push_back(new Image_wrapper(mats[0]));
   
   cout<<"Proceso secuencial..."<<endl;
   auto begin = chrono::high_resolution_clock::now(); //Inicio del tiempo de la prueba
 
+  //Ejecución del filtro gaussiano para la prueba secuencial
   gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
 
   auto end = chrono::high_resolution_clock::now(); //Fin del tiempo de la prueba
@@ -96,13 +96,13 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   }
   int num_tests = core_num_time.size();
 
-  //FIXME: Change to smart_ptr and dont read image file
+  //FIXME: Change to smart_ptr
   for (int img=1; img < num_tests; img++){ 
-     mats.push_back(new Mat(imread(imageName, 1)));
-     images.push_back(new Image_wrapper(&m, mats[img]));
+     mats.push_back(new Mat(control_mat->rows, control_mat->cols, control_mat->type()));
+     images.push_back(new Image_wrapper(mats[img]));
   }
 
-  //Se itera a lo largo de todas las pruebas (cada una con distinta cantidad de threads)
+  //Se itera sobre todas las pruebas, cada una con distinta cantidad de threads
   for (int test=1; test<num_tests; test++){
      int num_cores = core_num_time[test].first;
      
