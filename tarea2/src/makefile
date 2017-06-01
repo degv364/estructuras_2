@@ -3,7 +3,7 @@ CC := g++
 TARGET := main.x
 
 CFLAGS := -std=c++11 -Wall -c -pedantic -pthread `pkg-config --cflags opencv`
-LFLAGS := `pkg-config --libs opencv`
+LFLAGS := `pkg-config --libs opencv` -pthread
 
 SRC := $(wildcard *.cpp)
 OBJS := $(SRC:.cpp=.o)
