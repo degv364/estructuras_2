@@ -107,7 +107,7 @@ Vec3b Image_wrapper::get_neighborhood_gauss(int cx, int cy, int r, double std_de
   Vec3b uchar_result;
   int rx, ry; //Posición relativa (x,y) con respecto al centro (cx,cy)
 
-  double probe;
+  double probe=0;
 
   //Se recorre el vecindario para calcular el valor del filtro
   for (int nx=ng.get_x_start(); nx<ng.get_x_end(); nx++){
