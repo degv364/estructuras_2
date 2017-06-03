@@ -19,4 +19,4 @@ $(TARGET): $(OBJS) $(HEADER)
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf src/*.o $(TARGET)
+	rm -rf src/*.o *.dat *.pdf $(TARGET)

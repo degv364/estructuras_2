@@ -18,6 +18,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
+#include <fstream>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -40,11 +41,16 @@ int main(int argc, char** argv ){
   vector<vector<pair<int,double>>> exec_time;
   //Vector para almacenar el Speedup para cada prueba
   vector<double> speedup;
+
+  //Manejador de archivos para registrar los speedups
+  ofstream output;
+
   //Obtención de los parámetros indicados por los argumentos de la terminal
   Cmd_params cmd(argc, argv);
   
   exec_time.resize(cmd.image_count);
 
+  
   //Iterar por todas las imágenes, para ejecutar el experimento con cada una
   for (int img=0; img < cmd.image_count; img++){
     
@@ -62,6 +68,18 @@ int main(int argc, char** argv ){
 
     //Se obtiene el Speedup para todas las pruebas de la imagen correspondiente
     speedup = get_speed_up(exec_time[img]);
+
+    //Se abre el archivo en donde se registran los resultados de speedup 
+    output.open("speedup_img"+to_string(img)+".dat");
+
+    //Se escribe el archivo de speedup
+    for(unsigned i=0; i < speedup.size(); i++){
+       output << exec_time[img][i].first
+	      <<" "<< exec_time[img][i].second
+	      <<" "<< speedup[i] << endl;
+    }
+    output.close();
+
   }
   
   return 0;
