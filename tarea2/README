@@ -1,4 +1,19 @@
 ---------------------------------
+Instalacion
+---------------------------------
+Asegurarse que multiverse y universe estan en sources.list
+sudo apt-get update
+sudo apt-get install gcc make libopencv-dev
+
+--------------------------------
+Compilacion
+--------------------------------
+En la raiz de la tarea2 donde se encuentra este documento, tambien se
+encuentra un makefile. Para compilar ejecute:
+
+make
+
+--------------------------------
 Ejecución del programa
 --------------------------------
 
