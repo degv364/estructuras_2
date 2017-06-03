@@ -45,7 +45,7 @@ int main(int argc, char** argv ){
   
   exec_time.resize(cmd.image_count);
 
-  //Iterar por todas las imágenes, para ejecutar el experimento  con cada una
+  //Iterar por todas las imágenes, para ejecutar el experimento con cada una
   for (int img=0; img < cmd.image_count; img++){
     
     cout<<"Filtrando "<<cmd.image_names[img]<<" ..."<<endl;
