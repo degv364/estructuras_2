@@ -17,7 +17,6 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-//#include <opencv2/imgproc/imgproc.hpp>
 #include <mutex>
 #include <math.h>
 #include <iostream>
@@ -133,6 +132,6 @@ public:
  * su resultado en "target". Se debe indicar la desviación estándar del filtro y los 
  * límites de la franja vertical sobre la cual opera el filtro (start y end).
  */
-void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end);
+void gaussian_filter(Image_wrapper* target, Image_wrapper* source, int window_size, double std_dev, int start, int end);
 
 #endif

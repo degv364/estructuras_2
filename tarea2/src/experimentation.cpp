@@ -75,7 +75,7 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
   auto begin = chrono::high_resolution_clock::now(); //Inicio del tiempo de la prueba
 
   //Ejecución del filtro gaussiano para la prueba secuencial
-  gaussian_filter(images[0], &control, std_dev, 0, images[0]->get_width());
+  gaussian_filter(images[0], &control, window_size, std_dev, 0, images[0]->get_width());
 
   auto end = chrono::high_resolution_clock::now(); //Fin del tiempo de la prueba
 
@@ -115,6 +115,7 @@ vector<pair<int,double>> experiment(int index, int cores, int window_size, doubl
 	threads[core_id] = thread(&gaussian_filter,
 				  images[test],
 				  &control,
+				  window_size,
 				  std_dev,
 				  core_id*interval,
 				  (core_id+1)*interval);

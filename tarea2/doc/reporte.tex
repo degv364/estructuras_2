@@ -13,6 +13,7 @@
 \usepackage{float}
 \usepackage{listingsutf8}
 \usepackage[justification=centering]{caption}
+\usepackage{subcaption}
 \usepackage{multirow}
 
 \lstset{language=C++,
@@ -88,7 +89,7 @@ conflictivas.
 
 \section{Filtro Gaussiano}
 
-El filtro gausiano es un filtro cuya respuesta al impulso es una función gaussiana, la cual está
+El filtro gaussiano es un filtro cuya respuesta al impulso es una función gaussiana, la cual está
 definida por (\ref{eq:gauss_fn}). Dentro de las principales aplicaciones de los filtros gaussianos
 se encuentra el procesamiento de imágenes con el fin de atenuar ruido. 
 
@@ -125,7 +126,8 @@ resultados, no se utiliza para hacer el filtrado, sino que el mismo fue desarrol
 el algoritmo implementado.
 
 
-\subsection{Clase Image\_wraper}
+\subsection{Clase Image\_wrapper}
+
 OpenCV para C++ ofrece una clase llamada Mat que carga imágenes de distintos formatos como una
 matriz $n$ x $m$ (resolución en píxeles), en donde cada entrada es un vector tridimensional donde se
 codifica el color (formato RGB). Para facilitar el manejo de esta clase, se crea un clase que
@@ -135,7 +137,7 @@ Image\_wrapper hace los ajustes necesarios para que la imagen se recorra con fil
 
 
 \subsection{Clase Neighborhood}
-El filtro graussiano opera haciendo cálculos en lo que se conoce como una ventana, la cual
+El filtro gaussiano opera haciendo cálculos en lo que se conoce como una ventana, la cual
 corresponde a un conjunto de píxeles cercanos al píxel de interés, y usualmente tiene una forma
 cuadrada. Para cada píxel se debe calcular un nuevo valor (el valor filtrado), aplicando la función
 del filtro sobre dicha ventana o vecindario.
@@ -148,8 +150,8 @@ imagen).
 
 \subsection{Algoritmo del filtro gaussiano}
 
-Para calcular la imagen filtrada, se itera por cada uno de los pixeles (puede que en threads
-distintos) y se calcula el nuevo valor dados los pixeles en el ``vecindario''. Se definen dos
+Para calcular la imagen filtrada, se itera por cada uno de los píxeles (puede que en threads
+distintos) y se calcula el nuevo valor dados los píxeles en el ``vecindario''. Se definen dos
 imágenes, una es la imagen fuente o source, la cual es de solo lectura. Y está la imagen de
 escritura, que es donde se guardan los valores nuevos. Esto se hace así para que conforme se van
 cambiando los valores de los píxeles, estos cambios no afecten los nuevos cálculos, sino que los
@@ -163,8 +165,8 @@ define entonces por (\ref{eq:bidiGauss}).
 \end{equation}
 
 En la sección \ref{sec:pseudocodePixel}, se muestra el pseudocódigo del algoritmo utilizado para
-obtener el nuevo valor en el pixel en la posición $(c_x, c_y)$, lo cual se repite para cada pixel de
-la iamgen. La ejecución de este algoritmo se reparte en los threads de ejecución, para poder
+obtener el nuevo valor en el píxel en la posición $(c_x, c_y)$, lo cual se repite para cada píxel de
+la imagen. La ejecución de este algoritmo se reparte en los threads de ejecución, para poder
 correrlo en paralelo, sin embargo, esta repartición se explica más adelante.
 
 La función \textit{gaussian\_filter} recibe como parámetro dos imagenes. Una de ellas es la de solo
@@ -195,7 +197,7 @@ aplicación.
      for <$y$> in range(ng.y_start, ng.y_end):
         <$d_x$> = <$x-c_x$> //distancia en x
         <$d_y$> = <$y-c_y$>
-        gauss_val = <$\varphi(d_x, d_y)$> //calcular la funcion de gauss
+        gauss_val = <$\varphi(d_x, d_y)$> //calcular la función de gauss
         total+=gauss_val
         //calcular valores parciales con gauss
         target[<$c_x,c_y$>].red  += source[<$x,y$>].red*gauss_val 
@@ -274,33 +276,126 @@ cantidad de threads
 
 
 \section{Pruebas realizadas}
+\label{sec:pruebas}
+Para verificar el comportamiento del algoritmo implementado en secuencial y paralelo, se ejecutó la
+función \texttt{experiment} múltiples veces con la misma imagen. Para cada ejecución de
+\texttt{experiment}, se aplicó el filtro para cada cantidad de threads, la cual se incrementó en
+cada prueba dentro de \texttt{experiment}, hasta cierta cantidad máxima de threads.
 
+A partir de esto, se calcularon los tiempos de ejecución para cada prueba (aplicación del filtro),
+con los cuales se obtuvieron los resultados de ``speedup'' con respecto a la ejecución secuencial
+del algoritmo.
 
+Por otro lado, solamente ejecutando el caso secuencial y el paralelizado con la cantidad máxima de
+threads, se verificó que el resultado de ambos casos es el mismo, lo que permitió demostrar la
+correctitud del algoritmo. Además, se visualizó el resultado del algoritmo paralelizado con respecto
+a la imagen original, lo cual permitió observar que efectivamente se logra el efecto borroso
+característico de este filtro.
 
 \section{Resultados experimentales}
 
+En la figura \ref{fig:result_filtro}, se puede ver la imagen original y las imágenes procesadas por
+medio del filtro para una ventana de 9 píxeles y distintos valores de desviación estándar (figuras
+\ref{fig:imag_proc1} y \ref{fig:imag_proc2}). En estas imágenes se puede notar el efecto esperado
+del filtro gaussiano, en donde al incrementar la desviación estándar ($\sigma$) se aumenta la
+dispersión del filtro, lo que incrementa el efecto borroso en la imagen.
+
+En este ejemplo se puede ver como se disminuye considerablemente el ruido observado en la imagen
+original, lo que demuestra la utilidad del filtro implementado. Cabe destacar, que las imágenes
+mostradas corresponden a los resultados de la ejecución del algoritmo con 4 threads, sin embargo,
+los resultados para la prueba secuencial son idénticos, ya que se comprobó que las matrices de la
+imagen para ambos casos fueran iguales píxel por píxel.
+
+\begin{figure}[H]
+  \centering
+  \subcaptionbox{Imagen original\label{fig:imag_orig}}{\includegraphics[width=0.3\textwidth]{img/image_original}}
+  \subcaptionbox{Imagen procesada ($\sigma=1$)\label{fig:imag_proc1}}{\includegraphics[width=0.3\textwidth]{img/image_blurred_std_dev_1}}
+  \subcaptionbox{Imagen procesada ($\sigma=5$)\label{fig:imag_proc2}}{\includegraphics[width=0.3\textwidth]{img/image_blurred_std_dev_5}}
+  \caption{\label{fig:result_filtro}Resultados de la aplicación del filtro gaussiano implementado}
+\end{figure}
 
 
-\begin{figure}[ht]
+Por otra parte, al aplicar la prueba indicada en la sección \ref{sec:pruebas} (para evaluar el
+efecto del paralelismo), con una cantidad máxima de 15 threads, se obtuvo en primer lugar la gráfica
+del tiempo de ejecución para cada cantidad de threads, la cual se puede observar en la figura
+\ref{fig:time_multiple_15}.
+
+En esta gráfica, cada línea de diferente color corresponde a una ejecución de la función
+\texttt{experiment}, en donde se aplica toda la secuencia incremental de cantidad de cores. Es
+importante destacar que en el hardware disponible en donde se ejecutaron las pruebas se tiene un
+total de 4 cores en el procesador, lo cual se indica con la línea vertical punteada de color negro
+en la gráfica. 
+
+De esta manera, se puede notar que para todas las ejecuciones de \texttt{experiment} (diferentes
+líneas), se tiende a tener una disminución en el tiempo de ejecución al incrementar la cantidad de
+threads. 
+
+Sin embargo, se puede notar que para todos casos, cuando se llega a 4 threads se obtiene el tiempo
+mínimo alcanzable, ya que este no sigue disminuyendo al incrementar más la cantidad de threads. Esto
+es consecuente con el hecho de que se tienen 4 cores físicos, por lo que incrementar los threads más
+allá de este valor no hace más rápida la ejecución del programa, sino que incluso en algunos casos
+el tiempo de ejecución aumenta.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{img/time_multiple_15}
-  \caption{Tiempo de ejecución para una cantidad variable de hasta \\15 threads (múltiples
+  \caption{\label{fig:time_multiple_15}Tiempo de ejecución para una cantidad variable de hasta \\15 threads (múltiples
     iteraciones de la prueba)}
 \end{figure}
 
-\begin{figure}[ht]
+Por otro lado, es interesante notar que en la primera ejecución de \texttt{experiment} (línea
+morada), se tiene un tiempo de ejecución mayor para los primeros valores de cantidad de threads con
+respecto a las otras líneas. Esto se explica porque en esta primera ejecución se tienen por ejemplo
+más misses de caché, ya que se requiere accesar a los datos por primera vez, mientras que en los
+siguientes experimentos estos datos ya se encuentran cargados en el procesador.
+
+En la figura \ref{fig:speedup_multiple_15}, se puede ver el ``speedup'' asociado a los tiempos de
+ejecución de la gráfica anterior, con respecto al primer punto de la gráfica, que corresponde a la
+ejecución secuencial del algoritmo. Se puede notar que el primer experimento (línea morada) tiene un
+speedup considerablemente más grande que para los otros (líneas verde y cyan), lo cual se explica
+porque, como se indicó previamente, la ejecución de la prueba secuencial en el primer experimento
+tarda considerablemente más tiempo debido a que al principio se requiere traer los datos al caché
+del procesador. Esto provoca que las siguientes pruebas (mayor cantidad de cores) para el primer
+experimento tengan una mejora en tiempo mucho mayor, con respecto a la mejora observada en los otros
+experimentos.
+
+De cualquier forma, se puede ver que la ejecución paralelizada implementada del algoritmo del filtro
+gaussiano, presenta una mejora en tiempo considerable con respecto a la ejecución secuencial, por lo
+que se logró cumplir el objetivo deseado de aprovechar más el hardware disponible para hacer más
+eficiente la ejecución del programa.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{img/speedup_multiple_15}
-  \caption{Speedup para una cantidad variable de hasta \\15 threads (múltiples iteraciones de la prueba)}
+  \caption{\label{fig:speedup_multiple_15}Speedup para una cantidad variable de hasta \\15 threads (múltiples iteraciones de la prueba)}
 \end{figure}
 
-\begin{figure}[ht]
+En la figura \ref{fig:speedup_single_30}, se puede ver la misma prueba incrementando la cantidad de
+threads pero hasta una cantidad máxima de 30 threads, ejecutando solamente una vez la función
+\texttt{experiment} (una sola línea). En esta gráfica se puede ver con claridad que luego de 4
+threads se llega al límite de la mejora real observada, ya que al seguir aumentando los threads, el
+``speedup'' se mantiene alrededor del mismo valor, el cual incluso disminuye en algunos casos. 
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.9\textwidth]{img/speedup_single_30}
-  \caption{Speedup para una cantidad variable de hasta \\30 threads (una iteración de la prueba)}
+  \caption{\label{fig:speedup_single_30}Speedup para una cantidad variable de hasta \\30 threads (una iteración de la prueba)}
 \end{figure}
 
+\section{Conclusiones}
+A partir del efecto observado sobre la imagen en la figura \ref{fig:result_filtro}, se puede afirmar
+que se logró implementar correctamente el filtro gaussiano, logrando efectivamente corregir el ruido
+de la imagen original de forma variable mediante los parámetros como la desviación estándar.
 
+Por otro lado, de los resultados observados en las pruebas de ejecución del algoritmo del filtro con
+una cantidad variable de threads, se puede afirmar que se cumplió el objetivo de disminuir el tiempo
+de ejecución al incrementar la cantidad de threads, pero que la limitación del hardware disponible
+no permitió observar una mejora mayor luego de 4 threads, ya que se tenían 4 cores físicos.
+
+Además, es importante destacar que el primer experimento en la prueba realizada tarda un tiempo
+mayor en la ejecución secuencial del algoritmo, debido a que se deben cargar los datos en el caché
+del procesador, por lo que este primer resultado puede no reflejar el comportamiento promedio de
+múltiples experimentos consecutivos.
 
 
 \end{document}
