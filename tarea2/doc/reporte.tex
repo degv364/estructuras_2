@@ -36,8 +36,8 @@
 
 \begin {document}
 
-\title{Tarea2: Ejecuci\'on de un Filtro Gaussiano en Paralelo}
-\author{Daniel García Vaglio B42781, Esteban Zamora Alvarado B47769}
+\title{Tarea 2: Implementación de un filtro gaussiano en paralelo}
+\author{Daniel García Vaglio (B42781), Esteban Zamora Alvarado (B47769)}
 
 \maketitle
 
@@ -53,25 +53,21 @@ La ejecución concurrente se refiere a ejecutar varios programas al mismo tiempo
 entre ellos de alguna manera, pero no necesariamente se necesita que todos los programas tengan el
 mismo fin.
 
-\subsection{Datos e instrucciones}
-Se puede hacer la distinción entre paralelismo a nivel de instrucciones y paralelismo a nivel de
-datos.
-
 \section{Threads y Procesos}
 
 Existen dos maneras de lograr la paralelización, una es utilizar threads o hilos, y la otra es
-utilizar procesos. Paralelización multiproceso se refiere a que cada core se encarga de un (o varios) procesos
-independientes. Los procesos tienen su propio sector de memoria, y al terminar su ejecución retornan
-al proceso que los llamó. Por otra parte, los threads son ejecuciones en paralelo, en distintos cores, pero que pertenecen al
-mismo proceso. Como no se crean procesos distintos, entonces todos los threads comparten el mismo
-sector de memoria. \cite{oracle2015}
+utilizar procesos. Paralelización multiproceso se refiere a que cada core se encarga de uno o
+varios procesos independientes. Los procesos tienen su propio sector de memoria, y al terminar su
+ejecución retornan al proceso que los llamó. Por otra parte, los threads son ejecuciones en
+paralelo, en distintos cores, pero que pertenecen al mismo proceso. Como no se crean procesos
+distintos, entonces todos los threads comparten el mismo sector de memoria \cite{oracle2015}.
 
-Esta memoria compartida permite una mayor eficiencia, ya que los threads pueden
-accesar a los datos ya disponibles. Sin embargo es sumamente riesgoso, porque todos los
-threads pueden escribir en las mismas posiciones, y si no se toman precauciones, se pueden tener
-comportamientos indeterminados. Por otra parte los procesos son mucho más seguros, pues no comparten
-memoria, pero esto hace que si algún proceso necesita los datos de otro, deba pasarlos por medio de
-un protocolo de mensajes, lo que lo hace más ineficiente.
+Esta memoria compartida permite una mayor eficiencia, ya que los threads pueden accesar a los datos
+ya disponibles. Sin embargo también implica riesgos, porque todos los threads pueden escribir en las
+mismas posiciones, y si no se toman precauciones, se pueden tener comportamientos
+indeterminados. Por otra parte los procesos son mucho más seguros, pues no comparten memoria, pero
+esto hace que si algún proceso necesita los datos de otro, deba pasarlos por medio de un protocolo
+de mensajes, lo que lo hace más ineficiente.
 
 Por otra parte, los procesos hijos pueden ejecutarse aún sin el proceso padre, pero los threads
 únicamente existen dentro de un proceso. Entonces en caso que hayan errores, los threads ofrecen más
@@ -92,7 +88,7 @@ El filtro gaussiano es un filtro cuya respuesta al impulso es una función gauss
 definida por (\ref{eq:gauss_fn}). Dentro de las principales aplicaciones de los filtros gaussianos
 se encuentra el procesamiento de imágenes con el fin de atenuar ruido. 
 
-\begin{equation}%FIXME: cita
+\begin{equation}
   \varphi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
   \label{eq:gauss_fn}
 \end{equation}
@@ -106,7 +102,7 @@ permite enfocarse en rasgos más o menos detallados según se requiera.
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=\textwidth]{./img/canny} %FIXME: agragar cita
+  \includegraphics[width=\textwidth]{./img/canny}
   \caption{\label{fig:canny}Ejemplo de detección de bordes con diferentes parámetros \\del filtro gaussiano}
 \end{figure}
 
@@ -222,7 +218,7 @@ depende de la cantidad total de threads utilizada. Esto se puede observar en la 
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.6\textwidth]{img/image_threads}
+  \includegraphics[width=0.5\textwidth]{img/image_threads}
   \caption{\label{fig:image_threads}Repartición de los datos de la imagen en los threads}
 \end{figure}
 
@@ -253,7 +249,7 @@ thread correspondiente, con la posición de la franja vertical indicada por el l
 \end{lstlisting}
 
 
-\subsection{Experimentation}
+\subsection{Experimentación}
 
 Se tiene un grupo de funciones, que se agrupan como funciones de experimentación. Estas se encargan
 de computar, mostrar y analizar los resultados de las imágenes filtradas a partir de las imágenes
