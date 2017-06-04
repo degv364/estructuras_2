@@ -86,7 +86,7 @@ conflictivas.
 
 El filtro gaussiano es un filtro cuya respuesta al impulso es una función gaussiana, la cual está
 definida por (\ref{eq:gauss_fn}). Dentro de las principales aplicaciones de los filtros gaussianos
-se encuentra el procesamiento de imágenes con el fin de atenuar ruido. 
+se encuentra el procesamiento de imágenes con el fin de atenuar ruido. \cite{perkins2003}
 
 \begin{equation}
   \varphi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
@@ -98,12 +98,13 @@ los cuales son muy susceptibles a detectar partículas de ruido como parte de lo
 imagen. Por ejemplo, en la figura \ref{fig:canny} se puede ver el resultado de aplicar un algoritmo
 de detección que utiliza un filtro gaussiano como preprocesamiento. En este se puede ver que al
 modificar la desviación estándar del filtro ($\sigma$) se modifica el detalle de los bordes, lo cual
-permite enfocarse en rasgos más o menos detallados según se requiera.
+permite enfocarse en rasgos más o menos detallados según se requiera. \cite{wolfram2015}
 
 \begin{figure}[ht]
   \centering
   \includegraphics[width=\textwidth]{./img/canny}
-  \caption{\label{fig:canny}Ejemplo de detección de bordes con diferentes parámetros \\del filtro gaussiano}
+  \label{fig:canny}
+  \caption{Ejemplo de detección de bordes con diferentes parámetros \\del filtro gaussiano \protect\cite{stanford2015}}
 \end{figure}
 
 
@@ -282,10 +283,10 @@ con los cuales se obtuvieron los resultados de ``speedup'' con respecto a la eje
 del algoritmo.
 
 Por otro lado, solamente ejecutando el caso secuencial y el paralelizado con la cantidad máxima de
-threads, se verificó que el resultado de ambos casos es el mismo, lo que permitió demostrar la
-correctitud del algoritmo. Además, se visualizó el resultado del algoritmo paralelizado con respecto
-a la imagen original, lo cual permitió observar que efectivamente se logra el efecto borroso
-característico de este filtro.
+threads con una imagen a color, se verificó que el resultado de ambos casos es el mismo, lo que
+permitió demostrar la correctitud del algoritmo. Además, se visualizó el resultado del algoritmo
+paralelizado con respecto a la imagen original, lo cual permitió observar que efectivamente se
+logra el efecto borroso característico de este filtro.
 
 \section{Resultados experimentales}
 
@@ -303,10 +304,10 @@ imagen para ambos casos fueran iguales píxel por píxel.
 
 \begin{figure}[H]
   \centering
-  \subcaptionbox{Imagen original\label{fig:imag_orig}}{\includegraphics[width=0.3\textwidth]{img/image_original}}
+  \subcaptionbox{Imagen original \cite{boofcv2011}\label{fig:imag_orig}}{\includegraphics[width=0.3\textwidth]{img/image_original}}
   \subcaptionbox{Imagen procesada ($\sigma=1$)\label{fig:imag_proc1}}{\includegraphics[width=0.3\textwidth]{img/image_blurred_std_dev_1}}
   \subcaptionbox{Imagen procesada ($\sigma=5$)\label{fig:imag_proc2}}{\includegraphics[width=0.3\textwidth]{img/image_blurred_std_dev_5}}
-  \caption{\label{fig:result_filtro}Resultados de la aplicación del filtro gaussiano implementado}
+  \caption{\label{fig:result_filtro}Resultados de la aplicación del filtro gaussiano implementado \protect}
 \end{figure}
 
 
@@ -375,6 +376,23 @@ threads se llega al límite de la mejora real observada, ya que al seguir aument
   \centering
   \includegraphics[width=0.9\textwidth]{img/speedup_single_30}
   \caption{\label{fig:speedup_single_30}Speedup para una cantidad variable de hasta \\30 threads (una iteración de la prueba)}
+\end{figure}
+
+Finalmente, en la figura \ref{fig:color_compare} se muestra la comparación de resultados
+de procesamiento secuencial y paralelo respecto a una imagen a color. Se verificó píxel por píxel
+que ambas imágenes filtradas fueran iguales. Además se puede observar el efecto borroso y la
+disminución de ruido que produce
+el filtro, exactamente como se esperaba. Con esto se demuestra el funcionamiento correcto del
+algoritmo con imágenes a color, y con distintas cantidades de cores.
+
+\begin{figure}[H]
+  \centering
+  \subcaptionbox{Imagen original \cite{mohamed2006}\label{fig:imag_orig_color}}{\includegraphics[width=0.3\textwidth]{img/highImgNoise.jpg}}
+  \subcaptionbox{Secuencial\label{fig:imag_color1}}{\includegraphics[width=0.3\textwidth]{img/highImgNoise_1core_stddev2.jpg}}
+  \subcaptionbox{Paralela 2 cores\label{fig:imag_color2}}{\includegraphics[width=0.3\textwidth]{img/highImgNoise_2core_stddev2.jpg}}
+  \subcaptionbox{Paralela 3 cores\label{fig:imag_color3}}{\includegraphics[width=0.3\textwidth]{img/highImgNoise_3core_stddev2.jpg}}
+  \subcaptionbox{Paralela 4 cores\label{fig:imag_color4}}{\includegraphics[width=0.3\textwidth]{img/highImgNoise_4core_stddev2.jpg}}
+  \caption{\label{fig:result_filtro}Resultados para imagen a color ($\sigma=2$)\protect}
 \end{figure}
 
 \section{Conclusiones}
