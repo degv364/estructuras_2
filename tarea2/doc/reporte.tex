@@ -45,10 +45,10 @@
 
 La ejecución en paralelo se refiere a la ejecución de un mismo programa en varios cores, donde
 se reparten los recursos y tareas entre los cores, de manera que la ejecución suceda al mismo
-tiempo. \cite{blaise2017} 
+tiempo \cite{blaise2017}.
 Esta técnica se utiliza  usualmente para acelerar procesos que son computacionalmente intensivos, ya
 que las tareas se reparten entre varios cores, y no se ejecutan todas en uno solo. No se debe
-confundir el término con ejecución concurrente. %FIXME: cita apra paralelo vs concurrente
+confundir el término con ejecución concurrente \cite{grossman2012}.
 La ejecución concurrente se refiere a ejecutar varios programas al mismo tiempo, y que se comunican
 entre ellos de alguna manera, pero no necesariamente se necesita que todos los programas tengan el
 mismo fin.
@@ -62,11 +62,9 @@ datos.
 Existen dos maneras de lograr la paralelización, una es utilizar threads o hilos, y la otra es
 utilizar procesos. Paralelización multiproceso se refiere a que cada core se encarga de un (o varios) procesos
 independientes. Los procesos tienen su propio sector de memoria, y al terminar su ejecución retornan
-al proceso que los llamó. %FIXME: cita
-
-Por otra parte, los threads son ejecuciones en paralelo, en distintos cores, pero que pertenecen al
+al proceso que los llamó. Por otra parte, los threads son ejecuciones en paralelo, en distintos cores, pero que pertenecen al
 mismo proceso. Como no se crean procesos distintos, entonces todos los threads comparten el mismo
-sector de memoria. %FIXME: cita
+sector de memoria. \cite{oracle2015}
 
 Esta memoria compartida permite una mayor eficiencia, ya que los threads pueden
 accesar a los datos ya disponibles. Sin embargo es sumamente riesgoso, porque todos los
@@ -94,7 +92,7 @@ El filtro gaussiano es un filtro cuya respuesta al impulso es una función gauss
 definida por (\ref{eq:gauss_fn}). Dentro de las principales aplicaciones de los filtros gaussianos
 se encuentra el procesamiento de imágenes con el fin de atenuar ruido. 
 
-\begin{equation}
+\begin{equation}%FIXME: cita
   \varphi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
   \label{eq:gauss_fn}
 \end{equation}
@@ -121,7 +119,7 @@ El programa adjunto computa imágenes filtradas, utilizando un filtro gaussiano,
 
 fuente. Además realiza análisis automáticos del tiempo de ejecución y ``speedup'' para las
 diferentes pruebas paralelizadas. Para cargar las imágenes se utilizan funcionalidades de
-OpenCV. %FIXME: agregar cita
+OpenCV. \cite{opencv}
 Cabe destacar que OpenCV solo se utiliza para cargar las imágenes y para mostrar los
 resultados, no se utiliza para hacer el filtrado, sino que el mismo fue desarrollado enteramente por
 el algoritmo implementado.
@@ -160,7 +158,7 @@ valores filtrados se calculen todos con base en la imagen original. Sea $\sigma$
 estándar requerida, la función de Gauss bidimensional utilizada para el filtrado de la imagen se
 define entonces por (\ref{eq:bidiGauss}).
 
-\begin{equation}
+\begin{equation} %FIXME: cita
   \varphi (x, y)= \frac{e^{-(x^2+y^2)/\sigma^2}}{2\pi \sigma^2} 
   \label{eq:bidiGauss}
 \end{equation}
@@ -213,7 +211,7 @@ aplicación.
 
 \subsection{Algoritmo paralelizado}
 Para paralelizar el algoritmo del filtro gaussiano, se emplearon los \texttt{threads} de la
-biblioteca estándar de C++ 11. %FIXME: agregar cita
+biblioteca estándar de C++ 11.  %FIXME: cita
 De esta forma, se utiliza una función denominada
 \texttt{gaussian\_filter} en cada thread, a la cual se le indica la región de la imagen sobre la
 cual tiene que operar. En particular, la función fue implementada de forma que cada thread se
