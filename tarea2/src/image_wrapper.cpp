@@ -243,8 +243,8 @@ double gauss(int x, int y, double dev_std){
 }
 
 
-void gaussian_filter(Image_wrapper* target, Image_wrapper* source, double std_dev, int start, int end){
-  int window_size = ceil(3*std_dev); //Ventana del filtro recomendada de 6std_dev x 6std_dev
+void gaussian_filter(Image_wrapper* target, Image_wrapper* source, int window_size, double std_dev, int start, int end){
+   //int window_size = ceil(3*std_dev); //Ventana del filtro recomendada de 6std_dev x 6std_dev
   Vec3b gaussian;
   
   if (target->get_cols()==source->get_cols() && target->get_rows()==source->get_rows()){
