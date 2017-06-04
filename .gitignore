@@ -8,5 +8,6 @@
 *.log
 *.pdf
 *.zip
+*.dat
 
 *.pyc
