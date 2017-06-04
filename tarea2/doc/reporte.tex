@@ -15,6 +15,7 @@
 \usepackage[justification=centering]{caption}
 \usepackage{subcaption}
 \usepackage{multirow}
+\usepackage{apacite}
 
 \lstset{language=C++,
   frame=single,
@@ -44,7 +45,7 @@
 
 La ejecución en paralelo se refiere a la ejecución de un mismo programa en varios cores, donde
 se reparten los recursos y tareas entre los cores, de manera que la ejecución suceda al mismo
-tiempo. %FIXME: encontrar cita para definicion de ejecucion en paralelo
+tiempo. \cite{blaise2017} 
 Esta técnica se utiliza  usualmente para acelerar procesos que son computacionalmente intensivos, ya
 que las tareas se reparten entre varios cores, y no se ejecutan todas en uno solo. No se debe
 confundir el término con ejecución concurrente. %FIXME: cita apra paralelo vs concurrente
@@ -397,5 +398,11 @@ mayor en la ejecución secuencial del algoritmo, debido a que se deben cargar lo
 del procesador, por lo que este primer resultado puede no reflejar el comportamiento promedio de
 múltiples experimentos consecutivos.
 
+%----------------------
+% Bibliografía
+%----------------------
+
+\bibliographystyle{apacite}
+\bibliography{bibliografia}
 
 \end{document}

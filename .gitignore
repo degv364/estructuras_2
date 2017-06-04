@@ -10,4 +10,7 @@
 *.zip
 *.dat
 
+*.bbl
+*.blg
+
 *.pyc
