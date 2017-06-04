@@ -10,10 +10,56 @@
 
 \begin {document}
 
-\title{Tarea1: Simulación de cache}
+\title{Tarea2: Ejecuci\'on de un Filtro Gaussiano en Paralelo}
 \author{Daniel García Vaglio B42781, Esteban Zamora Alvarado B47769}
 
 \maketitle
+
+\section{Ejecución en paralelo}
+
+La ejecución en paralelo se refiere a la ejecución de un mismo programa en varios cores, donde
+se reparten los recursos y tareas entre los cores, de manera que la ejecución suceda al mismo
+tiempo. %FIXME: encontrar cita para definicion de ejecucion en paralelo
+Esta técnica se utiliza  usualmente para acelerar procesos que son computacionalmente intensivos, ya
+que las tareas se reparten entre varios cores, y no se ejecutan todas en uno solo. No se debe
+confundir el término con ejecución concurrente. %FIXME: cita apra paralelo vs concurrente
+La ejecución concurrente se refiere a ejecutar varios programas al mismo tiempo, y que se comunican
+entre ellos de alguna manera, pero no necesariamente se necesita que todos los programas tengan el
+mismo fin.
+
+\subsection{Datos e instrucciones}
+Se puede hacer la distinción entre paralelismo a nivel de instrucciones y paralelismo a nivel de
+datos.
+
+\section{Threads y Procesos}
+
+Existen dos maneras de lograr la paralelización, una es utilizar threads o hilos, y la otra es
+utilizar procesos. Paralelización multiproceso se refiere a que cada core se encarga de un (o varios) procesos
+independientes. Los procesos tienen su propio sector de memoria, y al terminar su ejecución retornan
+al proceso que los llamó.
+
+Por otra parte, los threads son ejecuciones en paralelo, en distintos cores, pero que pertenecen al
+mismo proceso. Como no se crean procesos distintos, entonces todos los threads comparten el mismo
+sector de memoria.
+
+Esta memoria compartida permite una mayor eficiencia, ya que los threads pueden
+accesar a los datos ya disponibles. Sin embargo es sumamente riesgoso, porque todos los
+threads pueden escribir en las mismas posiciones, y si no se toman precauciones, se pueden tener
+comportamientos indeterminados. Por otra parte los procesos son mucho más seguros, pues no comparten
+memoria, pero esto hace que si algún proceso necesita los datos de otro, deba pasarlos por medio de
+un protocolo de mensajes, lo que lo hace más ineficiente.
+
+Por otra parte, los procesos hijos pueden ejecutarse aún sin el proceso padre, pero los threads
+únicamente existen dentro de un proceso. Entonces en caso que hayan errores, los threads ofrecen más
+seguridad en el sentido que se terminan todas las ejecuciones, pero los procesos pueden quedar huérfanos y
+continuar ocupando recursos, aún cuando el proceso principal ya haya terminado.
+
+En el caso particular de esta aplicación se utilizan threads, porque ofrecen una mayor eficiencia a
+nivel de uso de memoria. Además como se va a explicar en las siguientes secciones, los datos se
+pueden separar fácilmente entre los threads, de manera que ellos nunca traten de accesar posiciones
+comunes. Más adelante se explica con más detalle, pero en general se toman imágenes y a cada thread
+se le asigna un sector distinto (exclusivo), entonces no existen riesgos, por escrituras
+confilctivas. 
 
 
 \section{Filtro Gaussiano}
@@ -33,7 +79,9 @@ se requiere comprimir imágenes, detectar bordes, o eliminar ruido.
 
 El programa adjunto computa imágenes filtradas, utilizando un filtro gaussiano, a partir de imágenes
 fuente. Además realiza análisis automáticos del ``speedup'' debido a la paralelización del
-algoritmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV. Cabe destacar que OpenCV
+algoritmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV %FIXME: agregar referencias
+
+. Cabe destacar que OpenCV
 solo se utiliza para cargar las imágenes y para mostrar los resultados, no se utiliza para hacer el
 filtrado, sino que el filtrado fue desarrollado enteramente por los estudiantes.
 
@@ -77,6 +125,16 @@ el pixel en la posición $(c_x, c_y)$. Este algoritmo se repite para cada pixel.
 algoritmo se reparte en los threads de ejecución, para poder correrlo en paralelo, sin embargo esta
 repartición  se explica más adelante.
 
+La función \textit{gaussian\_filter} recibe como parámetro dos imagenes. Una de ellas es la de solo
+elctura, y la otra es en la que se guarda el resultado. También recibe como parámetro la desviación
+estándar, que se necesita para realizar los cómputos de los nuevos valores filtrados. Los últimos
+dos parámetros son los que permiten la paralelización a nivel de datos del algoritmo. Ya que indican
+el número de columna de inicio, y el número de columna de fin. Entonces esta función solo va a
+escribir a partir de la columna de inicio, todas las fials, hasta la columna de final. Se hace por
+columnas, porque a lo interno OpenCV utiliza las filas como columnas, eso implica que los datos
+están continuos en las columnas del \textit{Image\_wrapper}, lo que incrementa el desempeño de la
+aplicación.  
+
 
 \subsubsection{Pseudocódigo para obtener nuevo valor en un píxel}
 \label{sec:pseudocodePixel}
@@ -108,7 +166,29 @@ repartición  se explica más adelante.
 Se tiene un grupo de funciones, que se agrupan como funciones de experimentación. Estas se encargan
 de computar, mostrar y analizar los resultados de las imágenes filtradas a parir de las imágenes
 fuente. De ellas la más importante es la función \textit{experiment}, que es la que se encarga de
-aplicar el algoritmo de filtrado en paralelo.
+aplicar el algoritmo de filtrado en paralelo. Un experimento es computar el filtro gaussiano de una
+imagen con distintas cantidades de hilos. 
+
+Recibe como parámetros el índice de la imagen, la
+cantidad de cores, el tamaño de la ventana, la desviación estándar, el nombre de la imagen, y
+booleanos que indican si se muestran o guardan las imágenes resultantes, también si se comparan los
+resultados entre ellos y si se hacen varias ejecuciones donde se va incrementando la cantidad de
+cores.
+
+La biblioteca estándar de C++11 ofrece un API para utilizar threads. Estos se utilizan para poder
+ejecutar el algoritmo en paralelo. A lo interno se tiene un vector de tipo thread, que permite
+el acceso ordenado a múltiples threads sin necesidad de nombrarlos uno a uno. Cada
+thread recibe como parámetro un puntero a la función \textit{gaussian\_filter} que se explicó
+anteriormente. Pero cada thread recibe límites de columna distintas. De manera que la imagen se
+divide en secciones verticales y se le reparten a cada thread para que realice los cómputos. Esta
+partición de la imagen se hace lo más simétrica posible entre los threads, de manera que a todos le
+correspondan la misma cantidad de columnas a procesar. Además se toman de manera que nos e traslapen
+para evitar que dos threads traten de escribir en los mismos píxeles.
+
+En caso de realizarse varias ejecuciones en paralelo (para distintas cantidades de cores), se hace
+la repartición de recursos para la cantidad requerida de threads, y se espera a que termien la
+ejecución de todos los hilos. Una vez terminada se vuelve a comenzar el proceso para la siguiente
+cantidad de threads
 
 
 \section{Pruebas realizadas}
