@@ -15,4 +15,4 @@ set xtics 1,1
 
 filelist=system("ls *.dat")
 
-plot for [file in filelist] file using 1:2 with linespoints pt 4 ps 1
+plot for [file in filelist] file using 1:3 with linespoints pt 4 ps 1

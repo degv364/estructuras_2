@@ -4,9 +4,33 @@
 \usepackage [T1]{fontenc}
 \usepackage [utf8]{inputenc}
 \usepackage {graphicx}
-\usepackage{subcaption}
-\usepackage{listings}
+\usepackage{color}
+\usepackage{xcolor}
+\usepackage{verbatim}
+\usepackage{tabls}
+\usepackage[space]{grffile}
+\usepackage{url}
+\usepackage{float}
+\usepackage{listingsutf8}
+\usepackage[justification=centering]{caption}
 \usepackage{multirow}
+
+\lstset{language=C++,
+  frame=single,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  commentstyle=\color[rgb]{0,0.5,0}\ttfamily,
+  morecomment=[l][\color{magenta}]{\#},
+  literate=%
+  {á}{{\'a}}1
+  {í}{{\'i}}1
+  {é}{{\'e}}1
+  {ó}{{\'o}}1
+  {ú}{{\'u}}1
+  {ñ}{{\~n}}1
+}
+
 
 \begin {document}
 
@@ -18,102 +42,192 @@
 
 \section{Filtro Gaussiano}
 
-El filtro gausiano es un filtro cuya respuesta al impulso es una función gaussiana, esta está
-definida por (\ref{eq:gauss_fn}). Estos filtros son utilizados para el análisis de imágenes, cuando
-se requiere comprimir imágenes, detectar bordes, o eliminar ruido. 
+El filtro gausiano es un filtro cuya respuesta al impulso es una función gaussiana, la cual está
+definida por (\ref{eq:gauss_fn}). Dentro de las principales aplicaciones de los filtros gaussianos
+se encuentra el procesamiento de imágenes con el fin de atenuar ruido. 
 
 \begin{equation}
   \varphi_{gauss}(x)=ae^{-\frac{(x-n)^2}{2x^2}}
-\label{eq:gauss_fn}
+  \label{eq:gauss_fn}
 \end{equation}
+
+Estos filtros se suelen utilizar como una etapa de previa a los algoritmos de detección de bordes,
+los cuales son muy susceptibles a detectar partículas de ruido como parte de los bordes en una
+imagen. Por ejemplo, en la figura \ref{fig:canny} se puede ver el resultado de aplicar un algoritmo
+de detección que utiliza un filtro gaussiano como preprocesamiento. En este se puede ver que al
+modificar la desviación estándar del filtro ($\sigma$) se modifica el detalle de los bordes, lo cual
+permite enfocarse en rasgos más o menos detallados según se requiera.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\textwidth]{./img/canny}
+  \caption{\label{fig:canny}Ejemplo de detección de bordes con diferentes parámetros \\del filtro gaussiano}
+\end{figure}
+
 
 
 
 \section{Implementación}
 
 El programa adjunto computa imágenes filtradas, utilizando un filtro gaussiano, a partir de imágenes
-fuente. Además realiza análisis automáticos del ``speedup'' debido a la paralelización del
-algoritmo. Para cargar las imágenes se utilizan funcionalidades de OpenCV. Cabe destacar que OpenCV
-solo se utiliza para cargar las imágenes y para mostrar los resultados, no se utiliza para hacer el
-filtrado, sino que el filtrado fue desarrollado enteramente por los estudiantes.
+fuente. Además realiza análisis automáticos del tiempo de ejecución y ``speedup'' para las
+diferentes pruebas paralelizadas. Para cargar las imágenes se utilizan funcionalidades de
+OpenCV. Cabe destacar que OpenCV solo se utiliza para cargar las imágenes y para mostrar los
+resultados, no se utiliza para hacer el filtrado, sino que el mismo fue desarrollado enteramente por
+el algoritmo implementado.
 
-\subsection{Image wraper}
+\subsection{Clase Image\_wraper}
 OpenCV para C++ ofrece una clase llamada Mat que carga imágenes de distintos formatos como una
-matriz $nxm$ (resolución en píxeles), donde cada entrada es un vector tridimensional donde se
+matriz $n$ x $m$ (resolución en píxeles), en donde cada entrada es un vector tridimensional donde se
 codifica el color (formato RGB). Para facilitar el manejo de esta clase, se crea un clase que
 funciona como interfaz de Mat. Esta se llama \textit{Image\_wrapper}. Para accesar a una celda de la
 matriz, OpenCV primero indexa la columna y luego la fila, esto no es el método natural, entonces
 Image\_wrapper hace los ajustes necesarios para que la imagen se recorra con fila columna.
 
-El filtro graussiano funciona haciendo cálculos en lo que se conoce como una ventana. Para cada
-píxel se debe calcular un nuevo valor (el valor filtrado). Este valor depende, en teoría, de todos
-los píxeles de la imagen, pero dependiendo de la desviación estándar requerida, los pixeles muy
-lejanos no tienen un aporte perceptible al nuevo valor. Entonces es posible no tomarlos en cuenta en
-los cálculos para acelerar el proceso, pero que el resultado final siga siendo el mismo. El conjunto
-de píxeles cercanos es conocido como ventana, y usualmente tiene una forma cuadrada. Se implementa
-una clase llamada \textit{neighbor}, que es una abstracción de la ventana. Esta clase calcula el
-nuevo valor (valor filtrado) del píxel en su centro, tomando en cuenta todos los píxeles dentro del
-``vecindario'', además detecta cuando
-se encuentra cerca de los bordes de la imagen y se ajusta para no pedir valores inválidos en sus
-cálculos.
 
-\subsection{Algorítmo del filtro}
+\subsection{Clase Neighborhood}
+El filtro graussiano opera haciendo cálculos en lo que se conoce como una ventana, la cual
+corresponde a un conjunto de píxeles cercanos al píxel de interés, y usualmente tiene una forma
+cuadrada. Para cada píxel se debe calcular un nuevo valor (el valor filtrado), aplicando la función
+del filtro sobre dicha ventana o vecindario.
+
+Se implementa una clase llamada \textit{neighborhood}, que consiste en una abstracción de la
+ventana. Esta clase calcula el nuevo valor (valor filtrado) del píxel en su centro, tomando en
+cuenta todos los píxeles dentro del ``vecindario'', además detecta cuando se encuentra cerca de los
+bordes de la imagen y se ajusta para no accesar valores inválidos en sus cálculos (fuera de la
+imagen).
+
+\subsection{Algoritmo del filtro gaussiano}
 
 Para calcular la imagen filtrada, se itera por cada uno de los pixeles (puede que en threads
 distintos) y se calcula el nuevo valor dados los pixeles en el ``vecindario''. Se definen dos
-imágenes, una es la imagen fuente, o source. Esta es una imagen de solo lectura. Y está la imagen de
+imágenes, una es la imagen fuente o source, la cual es de solo lectura. Y está la imagen de
 escritura, que es donde se guardan los valores nuevos. Esto se hace así para que conforme se van
 cambiando los valores de los píxeles, estos cambios no afecten los nuevos cálculos, sino que los
 valores filtrados se calculen todos con base en la imagen original. Sea $\sigma$ la desviación
-estándar requerida. Y la función de Gauss bidimensional se define por (\ref{eq:bidiGauss}).
+estándar requerida, la función de Gauss bidimensional utilizada para el filtrado de la imagen se
+define entonces por (\ref{eq:bidiGauss}).
 
 \begin{equation}
   \varphi (x, y)= \frac{e^{-(x^2+y^2)/\sigma^2}}{2\pi \sigma^2} 
   \label{eq:bidiGauss}
 \end{equation}
 
-En la sección \ref{sec:pseudocodePixel}, se muestra el pseudocódigo para obtener el nuevo valor en
-el pixel en la posición $(c_x, c_y)$. Este algoritmo se repite para cada pixel. La ejecución de este
-algoritmo se reparte en los threads de ejecución, para poder correrlo en paralelo, sin embargo esta
-repartición  se explica más adelante.
+En la sección \ref{sec:pseudocodePixel}, se muestra el pseudocódigo del algoritmo utilizado para
+obtener el nuevo valor en el pixel en la posición $(c_x, c_y)$, lo cual se repite para cada pixel de
+la iamgen. La ejecución de este algoritmo se reparte en los threads de ejecución, para poder
+correrlo en paralelo, sin embargo, esta repartición se explica más adelante.
 
 
 \subsubsection{Pseudocódigo para obtener nuevo valor en un píxel}
 \label{sec:pseudocodePixel}
+
 \begin{lstlisting}[escapeinside={<}{>}]
   //imagen fuente
   source
   //imagen de escritura
   target
-  ng = source.neighbor(<$c_x, c_y$>) //vecindario centrado en (<$c_x, c_y$>)
-  target[<$c_x,c_y$>]=(0,0,0)
+  //vecindario centrado en (<$c_x, c_y$>)
+  ng = source.neighborhood(<$c_x, c_y$>) 
+  //valor nuevo por calcular
+  target[<$c_x,c_y$>] = (0,0,0)
+
   for <$x$> in range(ng.x_start, ng.x_end):
      for <$y$> in range(ng.y_start, ng.y_end):
-        <$d_x$>=<$x-c_x$> //distancia en x
-        <$d_y$>=<$y-c_y$>
-        gauss_val=<$\varphi(d_x, d_y)$> //calcular la funcion de gauss
+        <$d_x$> = <$x-c_x$> //distancia en x
+        <$d_y$> = <$y-c_y$>
+        gauss_val = <$\varphi(d_x, d_y)$> //calcular la funcion de gauss
         total+=gauss_val
-        //calcular valores pesados con gauss
-        target[<$c_x,c_y$>].red  +=source[<$x,y$>].red*gauss_val 
-        target[<$c_x,c_y$>].green+=source[<$x,y$>].green*gauss_val
-        target[<$c_x,c_y$>].blue +=source[<$x,y$>].blue*gauss_val
-  target[<$c_x,c_y$>].red   /=total //dividir entre el total
-  target[<$c_x,c_y$>].green /=total
-  target[<$c_x,c_y$>].blue  /=total
+        //calcular valores parciales con gauss
+        target[<$c_x,c_y$>].red  += source[<$x,y$>].red*gauss_val 
+        target[<$c_x,c_y$>].green += source[<$x,y$>].green*gauss_val
+        target[<$c_x,c_y$>].blue += source[<$x,y$>].blue*gauss_val
+  
+  target[<$c_x,c_y$>].red   /= total //dividir entre el total
+  target[<$c_x,c_y$>].green /= total
+  target[<$c_x,c_y$>].blue  /= total
         
 \end{lstlisting}
+
+\subsection{Algoritmo paralelizado}
+Para paralelizar el algoritmo del filtro gaussiano, se emplearon los \texttt{threads} de la
+biblioteca estándar de C++ 11. De esta forma, se utiliza una función denominada
+\texttt{gaussian\_filter} en cada thread, a la cual se le indica la región de la imagen sobre la
+cual tiene que operar. En particular, la función fue implementada de forma que cada thread se
+encarga de calcular el resultado del filtro para una franja vertical de la imagen, cuyo ancho
+depende de la cantidad total de threads utilizada. Esto se puede observar en la figura
+\ref{fig:image_threads}.
+
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.6\textwidth]{img/image_threads}
+  \caption{\label{fig:image_threads}Repartición de los datos de la imagen en los threads}
+\end{figure}
+
+En este sentido se puede afirmar que este algoritmo emplea paralelización a nivel de datos, ya que
+se aplica la misma función para distintas secciones de la imagen. A continuación, se muestra el
+segmento de código utilizado para implementar la repartición de los datos con los threads. Se puede
+ver que los threads se recorren mediante un \texttt{for}, en cuyas iteraciones se va lanzando el
+thread correspondiente, con la posición de la franja vertical indicada por el límite inferior
+(\texttt{core\_id*interval}) y superior (\texttt{(core\_id+1)*interval}), en el eje x de la imagen.
+
+\begin{lstlisting}[escapeinside={<}{>}]
+  
+  for (int core<\_>id=0; core<\_>id <<> num<\_>cores; core<\_>id++){
+    //Ejecución del filtro gaussiano
+    //A cada thread se le asigna una franja de la imagen
+    threads[core<\_>id] = thread(<\&>gaussian<\_>filter,
+    images[test],
+    <\&>control,
+    std<\_>dev,
+    core<\_>id*interval,
+    (core<\_>id+1)*interval);
+  }
+  //Se espera a que terminen de ejecutarse todos los threads
+  for (int core<\_>id=0; core<\_>id < num<\_>cores; core<\_>id++){
+    threads[core<\_>id].join();
+  }
+
+\end{lstlisting}
+
 
 \subsection{Experimentation}
 
 Se tiene un grupo de funciones, que se agrupan como funciones de experimentación. Estas se encargan
-de computar, mostrar y analizar los resultados de las imágenes filtradas a parir de las imágenes
+de computar, mostrar y analizar los resultados de las imágenes filtradas a partir de las imágenes
 fuente. De ellas la más importante es la función \textit{experiment}, que es la que se encarga de
 aplicar el algoritmo de filtrado en paralelo.
 
 
 \section{Pruebas realizadas}
 
+
+
 \section{Resultados experimentales}
+
+
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{img/time_multiple_15}
+  \caption{Tiempo de ejecución para una cantidad variable de hasta \\15 threads (múltiples
+    iteraciones de la prueba)}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{img/speedup_multiple_15}
+  \caption{Speedup para una cantidad variable de hasta \\15 threads (múltiples iteraciones de la prueba)}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.9\textwidth]{img/speedup_single_30}
+  \caption{Speedup para una cantidad variable de hasta \\30 threads (una iteración de la prueba)}
+\end{figure}
+
+
 
 
 \end{document}
