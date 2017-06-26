@@ -47,7 +47,48 @@
 
 \section{Escenarios de prueba}
 
+\subsection{Instalación}
+Como se indica en las instrucciones, para instalar el simulador se emplea una máquina virtual de
+Virtual Box, en Ubuntu 16.04 LTS. En la figura %ref fig
+se muestran las especificaciones utilizadas par la realización de la tarea.
 
+ 
+Luego para instalar gem5, lo primero que se debe hacer es instalar las dependencias. Como muchas de
+ellas se encuentran en los repositorios denominados “Universe”, es necesario verificar que esos
+repositorios están agregados. En caso que no esté se debe agregar, en nuestro caso particular, sí estaba. Luego se instalan las dependencias:
+
+\begin{lstlisting}
+  cat -etc-apt-sources.list
+  sudo apt-get install g++ python python-dev scons zlib1g-dev m4  python-pydot protobuf-compiler git
+\end{lstlisting}
+ 
+Luego es necesario clonar el repositorio y compilar el código fuente. 
+
+\begin{lstlisting}
+  mkdir ~/repos && cd ~/repos
+  git clone https://github.com/gem5/gem5.git
+  cd ~/repos/gem5
+  scons build/ARM/gem5.opt -j5
+\end{lstlisting}
+
+Como se deben realizar simulaciones con un sistema completo, entonces se deben descargar las
+imágenes que recomiendan los desarrolladores de Gem5. Para los siguientes comandos se supone que el
+archivo con las imágenes ha sido descargado en ``~/Downloads/''. 
+
+\begin{lstlisting}
+  sudo mkdir /dist/m5/system
+  sudo cp ~/Downloads/aarch-system-2014-10.tar.xz .
+  sudo tar -xf aarch-system-2014-10.tar.xz
+\end{lstlisting}
+
+Una vez completados los pasos anteriores, el sistema está listo para correr simulaciones con Gem5.
+
+\subsection{Escenario A}
+
+
+\subsection{Escenario B}
+
+\subsection{Escenario C}
 
 \section{Filtro Gaussiano}
 

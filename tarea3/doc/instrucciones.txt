@@ -1,0 +1,59 @@
+--Verificar que universe, y multiverse estan en la lista
+cat /etc/apt/sources.list
+
+--Intallar git
+sudo apt-get install git
+
+--Crear un directorio para guardar el repositorio
+mkdir ~/repos && cd ~/repos
+
+--Clonar el repositorio con el codigo de gem5
+git clone https://github.com/gem5/gem5.git
+
+--Instalar las dependencias
+sudo apt-get install g++ python python-dev scons zlib1g-dev m4  python-pydot protobuf-compiler
+
+--Compilar gem5 para x86
+cd ~/repos/gem5
+scons build/ARM/gem5.opt -j5
+  
+--Se crea un directorio para las imagenes, y se descomprime la imagen ahi
+cd ~/repos/gem5
+sudo mkdir /dist/m5/system
+sudo tar -xf aarch-system-2014-10.tar.xz
+
+--Se crea una copia du la imagen
+cd /dist/m5/system
+cp linux-aarch32-ael.img my_image.img
+
+--Se agrega el ejecutable a la imagen
+fsik -l my_image.img
+#start: 63, block size 512
+sudo mount -o loop,offset=32256 my_image.img /mnt
+cd /mnt/bin
+sudp cp ~/repos/gem5/test/test-progs/hello/bin/arm/linux/hello .
+cd
+sudo umount /mnt
+
+--Se ejecuta el sistema completo
+./build/X86/gem5.opt configs/example/fs.py --disk-image=/dist/m5/system/my_image.img
+
+--en otra terminal
+telnet localhost 3456
+--Ua vez dentro de la maquina simulada, logearse como root
+cd /bin
+ls
+--verificar que se encuentra hello, se ejecuta
+hello
+
+
+====Visualizador====
+
+./build/ARM/gem5.opt --debug-flags=O3PipeView --debug-start=0 \
+--debug-file=trace.out configs/example/se.py --cpu-type=detailed --caches -c \
+tests/test-progs/hello/bin/arm/linux/hello
+
+
+./util/o3-pipeview.py -c 500 -o pipeview.out --color m5out/trace.out
+
+less -r pipeview.out
