@@ -85,15 +85,41 @@ Una vez completados los pasos anteriores, el sistema está listo para correr sim
 
 \subsection{Escenario A}
 
+\subsubsection{Emulación de Syscall}
+Primero se trabaja con el modo de simulación de llamadas a sistema. Para esto se debe ejecutar gem5,
+indicarle que se va a utilizar dicha configuración, y además se le proporciona el ejecutable que se
+desea ejecutar en la simulación. Para este caso particular, se utiliza el mismo ``hello world'' que se
+ofrece de ejemplo simple de prueba. Para eso se utiliza el siguiente comando:
+
+%FIXME: break line
+\begin{lstlisting}
+  build/ARM/gem5.opt configs/example/se.py -c tests/test-progs/hello/bin/arm/linux/hello
+\end{lstlisting}
+
+El código de hello world se ofrece a continuación:
+
+\begin{lstlisting}
+  #include <stdio.h>
+  int main(){
+    printf("Hello world!");
+  }
+\end{lstlisting}
+
+El resultado de la simulación se muestra en la figura %ref
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/hello_se_gem5_arm.png}
+  \caption{\label{fig:se_arm} Simulación SE de hello world en Gem5}
+\end{figure}
+
+\subsubsection{Simulación de sistema completo}
+
+
 
 \subsection{Escenario B}
 
 \subsection{Escenario C}
-
-\section{Filtro Gaussiano}
-
-
-
 
 
 \section{Conclusiones}
