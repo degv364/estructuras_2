@@ -114,7 +114,37 @@ El resultado de la simulación se muestra en la figura %ref
 \end{figure}
 
 \subsubsection{Simulación de sistema completo}
+El primer paso es crear la imagen que se va a estar utilizando para la simulación. Se toma como base
+una de las imágenes disponibles de los links de descarga: ``linux-aarch32-ael.img''. Se crea una
+copia y se monta para poder editar la imagen. Cabe destacar que como esto es una imagen de un disco
+completo, se debe indicar el inicio del mismo al montarlo.
 
+\begin{lstlisting}
+  cd /dist/m5/system
+  cp linux-aarch32-ael.img my_image.img
+  fsik -l my_image.img
+  #start: 63, block size 512
+  sudo mount -o loop,offset=32256 my_image.img /mnt
+\end{lstlisting}
+
+Una vez se tiene montada la imagen, se le agrega el ejecutable y se desmonta:
+\begin{lstlisting}
+  cd /mnt/bin
+  sudp cp ~/repos/gem5/test/test-progs/hello/bin/arm/linux/hello .
+  cd
+  sudo umount /mnt
+\end{lstlisting}
+
+Para la simulación del sistema completo se utiliza la imagen que se creó anteriormente.
+Las simulaciones de sistema completo no imprimen en la salida estándar, sino que se
+debe realizar una conexión por telnet con la máquina simulada. Entonces primero, para poder ejecutar
+la simulación se debe ejecutar el siguiente comando, desde la raíz de Gem5:
+
+\begin{lstlisting}
+  build/ARM/gem5.opt configs/example/fs.py --disk-image=/dist/m5/system/disk/my_image.img
+\end{lstlisting}
+
+Luego en otra terminal se ejecuta telnet para conectarse a ``localhost 3456''. Una vez realizada la 
 
 
 \subsection{Escenario B}
