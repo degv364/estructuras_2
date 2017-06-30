@@ -77,15 +77,40 @@ del hardware subyacente.
 \subsection{Modelos de CPU en Gem5}
 Gem5 permite utilizar diferentes modelos de CPU para ejecutar las simulaciones, los cuales
 comprenden diferentes niveles de complejidad a nivel arquitectónico (modelo del pipeline,
-interacción con memoria, entre otros). En primer lugar, el modelo \texttt{SimpleCPU} es uno
-puramente funcional con ejecución en orden, el cual es adecuado cuando no se requiere simular un
-modelo más complejo. Más detalladamente, este modelo mantiene el estado arquitectónico del programa
-mediante registros, permite ejecutar rutinas de interrupción, hacer solicitudes (``fetch'') a
-memoria y actualizar el PC (``Program Counter'') al avanzar en la ejecución de las
-instrucciones. Además \texttt{SimpleCPU} permite dos submodos, \texttt{AtomicSimpleCPU}, el cual
-emplea accesos atómicos a memoria (solicitando y obteniendo los datos en una misma transacción), y
-el \texttt{TimingSimpleCPU}, en el cual se realizar accesos a memoria temporizados (simula de forma
-detallada las latencias de acceso a la jerarquía de memoria).
+interacción con memoria, entre otros).
+
+En primer lugar, el modelo \texttt{SimpleCPU} es uno puramente funcional con ejecución en orden, el
+cual es adecuado cuando no se requiere simular un modelo más complejo. Más detalladamente, este
+modelo mantiene el estado arquitectónico del programa mediante registros, permite ejecutar rutinas
+de interrupción, hacer solicitudes (``fetch'') a memoria y actualizar el PC (``Program Counter'') al
+avanzar en la ejecución de las instrucciones \cite{***}. Además \texttt{SimpleCPU} permite dos
+submodos, \texttt{AtomicSimpleCPU}, el cual emplea accesos atómicos a memoria (solicitando y
+obteniendo los datos en una misma transacción), y el \texttt{TimingSimpleCPU}, en el cual se
+realizar accesos a memoria temporizados (simula de forma detallada las latencias de acceso a la
+jerarquía de memoria).
+
+Por otra parte, el modelo \texttt{O3CPU} corresponde al más detallado de Gem5, ya que implementa un
+Pipeline con ejecución fuera de orden (``Out of Order Execution''), el cual tiene las etapas de
+\textit{Fetch}, en donde en cada ciclo se trae una nueva instrucción al Pipeline desde la jerarquía
+de memoria y se gestiona el ``Branch Prediction'', \textit{Decode}, en la cual se interpreta la
+instrucción traída al Pipeline y se resuelve el valor del PC en los branches condicionales,
+\textit{Rename}, en donde se realiza el ``Register Renaming'' para prevenir algunos riesgos de
+datos, \textit{Issue/Execute/Writeback}, que corresponde al conjunto de etapas en donde se simula el
+envío de las instrucciones al ``Instruction Queue'', se gestiona el envío a ejecución de las
+instrucciones disponibles de este ``Instruction Queue'' (\textit{Issue}), se lleva a cabo la
+ejecución fuera de orden de estas instrucciones (\textit{Execute}) y se reescriben los resultados en
+los registros correspondientes (\textit{Writeback}), y \textit{Commit}, en donde se manejan las
+posibles excepciones provocadas por las instrucciones y se concreta el estado arquitectónico del
+sistema. Para lograr esto, este modelo contiene recursos como ``Branch Predictor'', ``Reorder
+Buffer'', ``Instruction Queue'', ``Load-store Queue'' y unidades funcionales de ejecución
+\cite{***}.
+
+También, existen otros modelos de CPU como \texttt{InOrderCPU}, el cual implementa un Pipeline con
+ejecución en orden con etapas similares a las del modelo \texttt{O3CPU}, y el modelo
+\texttt{TraceCPU}, el cual permite rastrear la información de timing y dependencias del sistema
+computacional sin requerir de la utilización del modelo detallado pero más lento de \texttt{O3CPU},
+lo que permite explorar el rendimiento del sistema de forma más rápida con una precisión razonable
+\cite{***}.
 
 
 \section{Escenarios de prueba}
@@ -101,7 +126,7 @@ se muestran las especificaciones utilizadas par la realización de la tarea.
   \caption{\label{fig:specs_vbox} Especificaciones de la máquina virtual}
 \end{figure}
  
-Luego para instalar gem5, lo primero que se debe hacer es instalar las dependencias. Como muchas de
+Luego para instalar Gem5, lo primero que se debe hacer es instalar las dependencias. Como muchas de
 ellas se encuentran en los repositorios denominados “Universe”, es necesario verificar que esos
 repositorios están agregados. En caso que no esté se debe agregar, en nuestro caso particular, sí estaba. Luego se instalan las dependencias:
 
