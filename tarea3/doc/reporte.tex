@@ -42,20 +42,19 @@
 \maketitle
 
 \section{¿Qué es Gem5?}
-\cite{opencv} %avoid compilation errors
 La herramienta Gem5 consiste en una plataforma de software libre (licencia BSD) para la simulación
-de sistemas computacionales basada en la ejecución de una serie de eventos discretos \cite{***}, los
-cuales conforman la simulación temporal del sistema. Al ser modular y abierto, Gem5 permite
-modificar, extender o reemplazar sus módulos para adaptarse a las necesidades del usuario, mediante
-la exposición de la clase \texttt{SimObject}, con la cual se pueden crear nuevos objetos para
-agregarlos al sistema de simulación.
+de sistemas computacionales basada en la ejecución de una serie de eventos discretos
+\cite{binkert2017}, los cuales conforman la simulación temporal del sistema. Al ser modular y
+abierto, Gem5 permite modificar, extender o reemplazar sus módulos para adaptarse a las necesidades
+del usuario, mediante la exposición de la clase \texttt{SimObject}, con la cual se pueden crear
+nuevos objetos para agregarlos al sistema de simulación.
 
 Esta plataforma está orientada a la investigación en arquitecturas de computadoras, por lo que tiene
 aplicaciones a nivel académico y en la industria, soportando arquitecturas como MIPS, ARM, Power,
-SPARC y x86 \cite{***}. Con respecto al software de Gem5, el mismo está implementado principalmente
-en C++ y Python, en donde el usuario escribe un script de configuración en Python para establecer
-las condiciones de la simulación, las características del hardware simulado, el modelo de memoria y
-procesamiento, entre otros \cite{***}.
+SPARC y x86 \cite{binkert2017}. Con respecto al software de Gem5, el mismo está implementado
+principalmente en C++ y Python, en donde el usuario escribe un script de configuración en Python
+para establecer las condiciones de la simulación, las características del hardware simulado, el
+modelo de memoria y procesamiento, entre otros.
 
 Más específicamente, la ejecución de Gem5 utiliza el script de configuración establecido por el
 usuario para correr cierto binario objetivo compilado para la arquitectura de interés, presentando
@@ -67,12 +66,12 @@ estadísticas de la simulación (tiempo de ejecución, uso de memoria, entre otr
 Dentro de los modos de simulación disponibles en Gem5 se encuentra ``Full System Mode'', en el cual
 se simula el sistema de hardware completo, lo cual comprende el CPU, la memoria, dispositivos de
 entrada y salida (IO), entre otros; de forma que esta herramienta se comporta como un hypervisor
-\cite{***}. Este modo permite entonces exponer los efectos de más bajo nivel sobre el rendimiento
-del sistema computacional, asociados a la interacción del sistema operativo con el hardware, de
-manera que el usuario incluso debe brindar una versión del kernel de Linux para ejecutarlo. Por otra
-parte, en ``System-call Emulation Mode'' se simula el programa binario objetivo y la respuesta del
-sistema operativo a dicho programa mediante llamadas de sistema, por lo que no se simula el efecto
-del hardware subyacente.
+\cite{lowe2017}. Este modo permite entonces exponer los efectos de más bajo nivel sobre el
+rendimiento del sistema computacional, asociados a la interacción del sistema operativo con el
+hardware, de manera que el usuario incluso debe brindar una versión del kernel de Linux para
+ejecutarlo. Por otra parte, en ``System-call Emulation Mode'' se simula el programa binario objetivo
+y la respuesta del sistema operativo a dicho programa mediante llamadas de sistema, por lo que no se
+simula el efecto del hardware subyacente.
 
 \subsection{Modelos de CPU en Gem5}
 Gem5 permite utilizar diferentes modelos de CPU para ejecutar las simulaciones, los cuales
@@ -83,8 +82,8 @@ En primer lugar, el modelo \texttt{SimpleCPU} es uno puramente funcional con eje
 cual es adecuado cuando no se requiere simular un modelo más complejo. Más detalladamente, este
 modelo mantiene el estado arquitectónico del programa mediante registros, permite ejecutar rutinas
 de interrupción, hacer solicitudes (``fetch'') a memoria y actualizar el PC (``Program Counter'') al
-avanzar en la ejecución de las instrucciones \cite{***}. Además \texttt{SimpleCPU} permite dos
-submodos, \texttt{AtomicSimpleCPU}, el cual emplea accesos atómicos a memoria (solicitando y
+avanzar en la ejecución de las instrucciones \cite{binkert2017}. Además \texttt{SimpleCPU} permite
+dos submodos, \texttt{AtomicSimpleCPU}, el cual emplea accesos atómicos a memoria (solicitando y
 obteniendo los datos en una misma transacción), y el \texttt{TimingSimpleCPU}, en el cual se
 realizar accesos a memoria temporizados (simula de forma detallada las latencias de acceso a la
 jerarquía de memoria).
@@ -103,14 +102,14 @@ los registros correspondientes (\textit{Writeback}), y \textit{Commit}, en donde
 posibles excepciones provocadas por las instrucciones y se concreta el estado arquitectónico del
 sistema. Para lograr esto, este modelo contiene recursos como ``Branch Predictor'', ``Reorder
 Buffer'', ``Instruction Queue'', ``Load-store Queue'' y unidades funcionales de ejecución
-\cite{***}.
+\cite{binkert2017}.
 
 También, existen otros modelos de CPU como \texttt{InOrderCPU}, el cual implementa un Pipeline con
 ejecución en orden con etapas similares a las del modelo \texttt{O3CPU}, y el modelo
 \texttt{TraceCPU}, el cual permite rastrear la información de timing y dependencias del sistema
 computacional sin requerir de la utilización del modelo detallado pero más lento de \texttt{O3CPU},
 lo que permite explorar el rendimiento del sistema de forma más rápida con una precisión razonable
-\cite{***}.
+\cite{binkert2017}.
 
 
 \section{Escenarios de prueba}
