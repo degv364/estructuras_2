@@ -92,20 +92,29 @@ detallada las latencias de acceso a la jerarquía de memoria).
 
 \subsection{Instalación}
 Como se indica en las instrucciones, para instalar el simulador se emplea una máquina virtual de
-Virtual Box, en Ubuntu 16.04 LTS. En la figura %ref fig
+Virtual Box, en Ubuntu 16.04 LTS. En la figura \ref{fig:specs_vbox}
 se muestran las especificaciones utilizadas par la realización de la tarea.
 
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/virtualbox_spec.png}
+  \caption{\label{fig:specs_vbox} Especificaciones de la máquina virtual}
+\end{figure}
  
 Luego para instalar gem5, lo primero que se debe hacer es instalar las dependencias. Como muchas de
 ellas se encuentran en los repositorios denominados “Universe”, es necesario verificar que esos
 repositorios están agregados. En caso que no esté se debe agregar, en nuestro caso particular, sí estaba. Luego se instalan las dependencias:
 
 \begin{lstlisting}
-  cat -etc-apt-sources.list
+  cat /etc/apt/sources.list
   sudo apt-get install g++ python python-dev scons zlib1g-dev m4  python-pydot protobuf-compiler git
 \end{lstlisting}
  
-Luego es necesario clonar el repositorio y compilar el código fuente. 
+Luego es necesario clonar el repositorio (ver figura \ref{fig:cloning}). Luego se debe compilar el
+código fuente. En la figura \ref{fig:compiling} se muestra un screenshot de la compilación. Además
+se muestra una comparación de la ejecución de procesos de la máquina virtual y del host (utilizando
+htop). Mientras la máquina virtual compila(terminales de abajo), el host únicamente ve los procesos
+de virtualbox (terminales de arriba). 
 
 \begin{lstlisting}
   mkdir ~/repos && cd ~/repos
@@ -114,15 +123,36 @@ Luego es necesario clonar el repositorio y compilar el código fuente.
   scons build/ARM/gem5.opt -j5
 \end{lstlisting}
 
+
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{img/cloning.png}
+  \caption{\label{fig:cloning} Clonando Gem5}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{img/compilin7_extern.png}
+  \caption{\label{fig:compiling} Compilación de Gem5 y comparación con el host}
+\end{figure}
+
 Como se deben realizar simulaciones con un sistema completo, entonces se deben descargar las
 imágenes que recomiendan los desarrolladores de Gem5. Para los siguientes comandos se supone que el
-archivo con las imágenes ha sido descargado en ``~/Downloads/''. 
+archivo con las imágenes ha sido descargado en ``\~/Downloads/'' (ver figura \ref{fig:extracted}). 
 
 \begin{lstlisting}
   sudo mkdir /dist/m5/system
+  cd /dist/m5/system
   sudo cp ~/Downloads/aarch-system-2014-10.tar.xz .
   sudo tar -xf aarch-system-2014-10.tar.xz
 \end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/extracted_img_arm.png}
+  \caption{\label{fig:extracted} Imágenes de sistema completo recomendadas por Gem5}
+\end{figure}
 
 Una vez completados los pasos anteriores, el sistema está listo para correr simulaciones con Gem5.
 
@@ -157,13 +187,102 @@ El resultado de la simulación se muestra en la figura %ref
 \end{figure}
 
 \subsubsection{Simulación de sistema completo}
+El primer paso es crear la imagen que se va a estar utilizando para la simulación. Se toma como base
+una de las imágenes disponibles de los links de descarga: ``linux-aarch32-ael.img''. Se crea una
+copia y se monta para poder editar la imagen. Cabe destacar que como esto es una imagen de un disco
+completo, se debe indicar el inicio del mismo al montarlo.
 
+\begin{lstlisting}
+  cd /dist/m5/system
+  cp linux-aarch32-ael.img my_image.img
+  fsik -l my_image.img
+  #start: 63, block size 512
+  sudo mount -o loop,offset=32256 my_image.img /mnt
+\end{lstlisting}
 
+Una vez se tiene montada la imagen, se le agrega el ejecutable y se desmonta:
+\begin{lstlisting}
+  cd /mnt/bin
+  sudp cp ~/repos/gem5/test/test-progs/hello/bin/arm/linux/hello .
+  cd
+  sudo umount /mnt
+\end{lstlisting}
+
+Para la simulación del sistema completo se utiliza la imagen que se creó anteriormente.
+Las simulaciones de sistema completo no imprimen en la salida estándar, sino que se
+debe realizar una conexión por telnet con la máquina simulada. Entonces primero, para poder simular
+la máquina se debe ejecutar el siguiente comando, desde la raíz de Gem5 (ver figura
+\ref{fig:arm_full_gem5}):
+
+\begin{lstlisting}
+  build/ARM/gem5.opt configs/example/fs.py --disk-image=/dist/m5/system/disk/my_image.img
+\end{lstlisting}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/full_sys_arm.png}
+  \caption{\label{fig:arm_full_gem5} Simulación FS en Gem5}
+\end{figure}
+
+Luego en otra terminal se ejecuta telnet para conectarse a ``localhost 3456'' (ver fig
+\ref{fig:telnet}). Una vez realizada la
+conexión, se debe esperar a que el sistema bootée y luego se logea como root. Una vez dentro, como
+el ejecutable fue agregado dentro de /bin, basta con digitar ``hello'' para poder ejecutarlo (ver
+figura \ref{fig:hello_fs}).
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/full_telnet_conn.png}
+  \caption{\label{fig:telnet} Conexión por telnet}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/hello_fs_arm.png}
+  \caption{\label{fig:hello_fs} Ejecución en Full System de Hello}
+\end{figure}
 
 \subsection{Escenario B}
 
 \subsection{Escenario C}
 
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/exec_fro_viz.png}
+  \caption{\label{fig:exec_for_viz} Ejecución de Gem5 para visualización}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \label{fig:result_viz}
+  \begin{subfigure}[b]{0.9\textwidth}
+    \includegraphics[width=\textwidth]{img/pipeline_init.png}
+    \caption{\label{fig:pipeline_init} Inicialización}
+  \end{subfigure}
+  
+  \begin{subfigure}[b]{0.9\textwidth}
+    \includegraphics[width=\textwidth]{img/pipeline_waw.png}
+    \caption{\label{fig:pipeline_waw} WAW}
+  \end{subfigure}
+  \hfill
+  
+  \begin{subfigure}[b]{0.9\textwidth}
+    \includegraphics[width=\textwidth]{img/exec_nice.png}
+    \caption{\label{fig:viz} Ejecución normal}
+  \end{subfigure}
+  
+  \begin{subfigure}[b]{0.9\textwidth}
+    \includegraphics[width=\textwidth]{img/exec_nice2.png}
+    \caption{\label{fig:viz2} Ejecución con branch}
+  \end{subfigure}
+  
+  \begin{subfigure}[b]{0.9\textwidth}
+    \includegraphics[width=\textwidth]{img/exec_nice3.png}
+    \caption{\label{fig:viz3} Misses de fetch}
+  \end{subfigure}
+  \caption{Visualización del pipeline}
+\end{figure}
 
 \section{Conclusiones}
 
