@@ -15,7 +15,7 @@ reporte.pdf: reporte.tex bibliografia.bib
 	pdflatex reporte.tex
 
 clean:
-	rm reporte.pdf
+	rm -r reporte.pdf
 
 clean_all:
-	rm *.aux *.log *.bbl *.blg reporte.pdf
+	rm -r *.aux *.log *.bbl *.blg reporte.pdf
