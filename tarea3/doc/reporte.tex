@@ -203,6 +203,36 @@ figura \ref{fig:hello_fs}).
 
 \subsection{Escenario C}
 
+Para realizar la simulación se esta parte se utiliza la configuración básica de llamadas de
+sistema. Para ejecutar la prueba se utiliza el siguiente comando (ver figura \ref{fig:exec_for_viz}):
+
+\begin{lstlising}
+  ./build/ARM/gem5.opt --debug-flags=O3PipeView --debug-start=0 --debug-file=trace.out configs/example/se.py --cpu-type=detailed --caches -c tests/test-progs/hello/bin/arm/linux/hello
+\end{lstlisting}
+
+La primera parte indica el ejecutable de Gem5 que se utiliza. En este caso se refiere a la versión
+par ARM. Luego se le indica que se quiere generar la salida para el visualizador O3 Pipe View. La
+tercera opción se utiliza para indicar el inicio. Como en este caso se quiere analizar toda la
+simulación se coloca 0 (desde el tick 0 del clock). Posteriormente se indica el archivo donde se
+deben guardar los resultados. Finalmente se proporciona el script de configuración con sus
+respectivas opciones. Luego se debe transformar el archivo de salida a un archivo en texto con
+colores, con el siguiente comando:
+
+\begin{lstlisting}
+  ./util/o3-pipeview.py -c 500 -o pipeview.out --color m5out/trace.out
+\end{lstlisting}
+
+Las visualizaciones se proporcionan en la figura \ref{fig:result_viz}. La primera parte es la
+inicialización (ver figura \ref{fig:pipeline_init}). Como era de esperarse hay muchos misses, esto
+porque la información no se ha cargado en caché. Luego en la figura \ref{fig:pipeline_waw} se tiene
+un caso de ``write after write'', entonces las últimas instrucciones experimentan un stall. En la
+figura \ref{fig:viz} se muestra la operación normal, este tipo de patrones se repite varias veces
+en el archivo. Luego en la figura \ref{fig:viz2} hay un branch, es importante notar que estas
+instrucciones usualmente provocan un cambio entre ``='' y ``.'' . Además también se sabe que no se
+toma el branch, pues la siguiente instrucción se encuentra 4 posiciones luego de la
+pasada. Finalmente en la figura \ref{fig:viz3}, hay un salto. Este no es un salto directamente, sino
+que se cambia el valor de PC. Como es de esperarse, las instrucciones siguientes tienen misses al
+hacer fetch de las instrucciones, esto porque las instrucciones aún no están en cache.
 
 \begin{figure}[ht]
   \centering
@@ -240,6 +270,10 @@ figura \ref{fig:hello_fs}).
   \end{subfigure}
   \caption{Visualización del pipeline}
 \end{figure}
+
+
+
+
 
 \section{Conclusiones}
 
