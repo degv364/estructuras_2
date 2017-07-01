@@ -267,6 +267,85 @@ figura \ref{fig:hello_fs}).
 \end{figure}
 
 \subsection{Escenario B}
+Para este apartado, se modificaron los archivos del código de ejemplo \texttt{two\_level.py} y
+\texttt{caches.py}, disponibles en el directorio \texttt{configs/learning\_gem5/part1/} dentro de la
+carpeta de \texttt{gem5}. Para esto, en primer lugar se agregó una nueva clase \texttt{L3Cache}, la
+cual es casi idéntica a la clase \texttt{L2Cache} pero con diferentes parámetros para evidenciar el
+hecho de que el nivel L3 de caché tiene un mayor tamaño y mayores latencias de acceso. El código de
+la clase \texttt{L3Cache} se muestra a continuación:
+
+\begin{lstlisting}
+  class L3Cache(Cache):
+
+  # Default parameters
+  size = '1024kB'
+  assoc = 8
+  tag_latency = 100
+  data_latency = 100
+  response_latency = 100
+  mshrs = 20
+  tgts_per_mshr = 12
+
+  SimpleOpts.add_option('--l3_size', 
+                         help="L3 cache size. Default: %s" 
+                         % size)
+
+  def __init__(self, opts=None):
+  super(L3Cache, self).__init__()
+  if not opts or not opts.l3_size:
+  return
+  self.size = opts.l3_size
+
+  def connectCPUSideBus(self, bus):
+  self.cpu_side = bus.master
+
+  def connectMemSideBus(self, bus):
+  self.mem_side = bus.slave
+\end{lstlisting}
+
+El nivel de caché L3 fue agregado en el script de configuración, denominado ahora
+\texttt{three\_level.py}, modificando el código que ya incluía hasta nivel L2 de caché para incluir
+este nivel extra, reconectando los buses de comunicación de manera adecuada y agregando uno más para
+comunicar el nivel L3 con la memoria principal del sistema. Este código se muestra a continuación:
+
+\begin{lstlisting}
+# Create an L1 instruction and data cache
+system.cpu.icache = L1ICache(opts)
+system.cpu.dcache = L1DCache(opts)
+
+# Connect the instruction and data caches to the CPU
+system.cpu.icache.connectCPU(system.cpu)
+system.cpu.dcache.connectCPU(system.cpu)
+
+# Create a memory bus, a coherent crossbar (l2bus)
+system.l2bus = L2XBar()
+
+# Hook the CPU ports up to the l2bus
+system.cpu.icache.connectBus(system.l2bus)
+system.cpu.dcache.connectBus(system.l2bus)
+
+# Create an L2 cache and connect it to the l2bus
+system.l2cache = L2Cache(opts)
+system.l2cache.connectCPUSideBus(system.l2bus)
+
+# Create a memory bus, a coherent crossbar (l3bus)
+system.l3bus = L2XBar()
+
+# Connect the L2 cache to the l3bus
+system.l2cache.connectMemSideBus(system.l3bus)
+
+# Create an L3 cache and connect it to the l3bus
+system.l3cache = L3Cache(opts)
+system.l3cache.connectCPUSideBus(system.l3bus)
+
+# Create a memory bus
+system.membus = SystemXBar()
+
+# Connect the L3 cache to the membus
+system.l3cache.connectMemSideBus(system.membus)
+\end{lstlisting}
+
+
 
 \subsection{Escenario C}
 
