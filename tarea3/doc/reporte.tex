@@ -306,45 +306,54 @@ la clase \texttt{L3Cache} se muestra a continuación:
 
 El nivel de caché L3 fue agregado en el script de configuración, denominado ahora
 \texttt{three\_level.py}, modificando el código que ya incluía hasta nivel L2 de caché para incluir
-este nivel extra, reconectando los buses de comunicación de manera adecuada y agregando uno más para
-comunicar el nivel L3 con la memoria principal del sistema. Este código se muestra a continuación:
+este nivel extra, reconectando los buses de comunicación de manera adecuada y agregando un bus más
+para comunicar el nivel L3 con la memoria principal del sistema. Este código se muestra a
+continuación:
 
 \begin{lstlisting}
 # Create an L1 instruction and data cache
 system.cpu.icache = L1ICache(opts)
 system.cpu.dcache = L1DCache(opts)
-
 # Connect the instruction and data caches to the CPU
 system.cpu.icache.connectCPU(system.cpu)
 system.cpu.dcache.connectCPU(system.cpu)
-
 # Create a memory bus, a coherent crossbar (l2bus)
 system.l2bus = L2XBar()
-
 # Hook the CPU ports up to the l2bus
 system.cpu.icache.connectBus(system.l2bus)
 system.cpu.dcache.connectBus(system.l2bus)
-
 # Create an L2 cache and connect it to the l2bus
 system.l2cache = L2Cache(opts)
 system.l2cache.connectCPUSideBus(system.l2bus)
-
 # Create a memory bus, a coherent crossbar (l3bus)
 system.l3bus = L2XBar()
-
 # Connect the L2 cache to the l3bus
 system.l2cache.connectMemSideBus(system.l3bus)
-
 # Create an L3 cache and connect it to the l3bus
 system.l3cache = L3Cache(opts)
 system.l3cache.connectCPUSideBus(system.l3bus)
-
 # Create a memory bus
 system.membus = SystemXBar()
-
 # Connect the L3 cache to the membus
 system.l3cache.connectMemSideBus(system.membus)
 \end{lstlisting}
+
+En el fragmento anterior se puede ver como se agregó el nuevo módulo \texttt{system.l3cache} y el
+nuevo bus de comunicación \texttt{system.l3bus}, el cual se conecta mediante el caché L3, por un
+lado con el caché L2 y por el otro con la memoria. Los módulos del caché L1 se mantienen igual que
+en ejemplo original, ya que estos no interactúan con el nuevo nivel agregado a la jerarquía de
+memoria.
+
+En la figura \ref{fig:three_levels}, se puede observar la ejecución correcta del binario que imprime
+el texto ``Hola mundo'', con la arquitectura establecida para el sistema computacional de tres
+niveles de caché en \texttt{three\_levels.py}.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{img/three_level_full_frame.png}
+  \caption{\label{fig:three_levels} Captura de pantalla de la ejecución del programa con la
+    arquitectura de tres niveles en la jerarquía de memoria}
+\end{figure}
 
 
 
