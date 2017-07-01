@@ -206,7 +206,7 @@ El resultado de la simulación se muestra en la figura %ref
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/hello_se_gem5_arm.png}
+  \includegraphics[width=\textwidth]{img/hello_se_full_frame.png}
   \caption{\label{fig:se_arm} Simulación SE de hello world en Gem5}
 \end{figure}
 
@@ -244,7 +244,7 @@ la máquina se debe ejecutar el siguiente comando, desde la raíz de Gem5 (ver f
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/full_sys_arm.png}
+  \includegraphics[width=\textwidth]{img/full_sys_arm.png}
   \caption{\label{fig:arm_full_gem5} Simulación FS en Gem5}
 \end{figure}
 
@@ -256,13 +256,13 @@ figura \ref{fig:hello_fs}).
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/full_telnet_conn.png}
+  \includegraphics[width=\textwidth]{img/full_telnet_conn.png}
   \caption{\label{fig:telnet} Conexión por telnet}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/hello_fs_arm.png}
+  \includegraphics[width=\textwidth]{img/hello_fs_full_frame.png}
   \caption{\label{fig:hello_fs} Ejecución en Full System de Hello}
 \end{figure}
 
@@ -274,7 +274,7 @@ Para realizar la simulación se esta parte se utiliza la configuración básica 
 sistema. Para ejecutar la prueba se utiliza el siguiente comando (ver figura \ref{fig:exec_for_viz}):
 
 \begin{lstlisting}
-  ./build/ARM/gem5.opt --debug-flags=O3PipeView --debug-start=0 --debug-file=trace.out configs/example/se.py --cpu-type=detailed --caches -c tests/test-progs/hello/bin/arm/linux/hello
+  ./build/ARM/gem5.opt --debug-flags=O3PipeView --debug-start=0 --debug-file=trace.out configs/example/se.py --cpu-type=O3_ARM_v7a_3 --caches -c tests/test-progs/hello/bin/arm/linux/hello
 \end{lstlisting}
 
 La primera parte indica el ejecutable de Gem5 que se utiliza. En este caso se refiere a la versión
@@ -303,7 +303,7 @@ hacer fetch de las instrucciones, esto porque las instrucciones aún no están e
 
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=0.5\textwidth]{img/exec_fro_viz.png}
+  \includegraphics[width=\textwidth]{img/for_view_full_frame.png}
   \caption{\label{fig:exec_for_viz} Ejecución de Gem5 para visualización}
 \end{figure}
 
